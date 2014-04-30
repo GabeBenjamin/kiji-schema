@@ -59,4 +59,11 @@ public final class TestingCassandraAdmin extends CassandraAdmin {
   public static TestingCassandraAdmin makeFromKijiURI(Session session, KijiURI kijiURI) {
     return new TestingCassandraAdmin(session, kijiURI);
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public void close() {
+    // Don't close the session for unit tests!  We want to reuse the same session across
+    // different tests.
+  }
 }

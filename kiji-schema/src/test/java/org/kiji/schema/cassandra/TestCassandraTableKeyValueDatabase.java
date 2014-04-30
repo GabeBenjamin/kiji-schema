@@ -31,14 +31,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiTableKeyValueDatabase;
 import org.kiji.schema.KijiURI;
-import org.kiji.schema.impl.cassandra.CassandraAdmin;
 
 /**
  * This class tests that HBaseTableLayoutDatabase is correctly writing and reading from HBase
@@ -61,7 +59,7 @@ public class TestCassandraTableKeyValueDatabase extends CassandraKijiClientTest 
     return Collections.unmodifiableMap(result);
   }
 
-  private CassandraAdmin mAdmin;
+  //private CassandraAdmin mAdmin;
   private KijiTableKeyValueDatabase mDb;
 
   @Before
@@ -71,11 +69,11 @@ public class TestCassandraTableKeyValueDatabase extends CassandraKijiClientTest 
 
     // Get an admin and create a table for this instance.
     KijiURI kijiURI = kiji.getURI();
-    mAdmin = CassandraFactory
-        .Provider
-        .get()
-        .getCassandraAdminFactory(kijiURI)
-        .create(kijiURI);
+    //mAdmin = CassandraFactory
+        //.Provider
+        //.get()
+        //.getCassandraAdminFactory(kijiURI)
+        //.create(kijiURI);
 
     // Fill it with some data.
     mDb = kiji.getMetaTable();
@@ -85,10 +83,10 @@ public class TestCassandraTableKeyValueDatabase extends CassandraKijiClientTest 
     mDb.putValue("table2", "config2", Bytes.toBytes("2two"));
   }
 
-  @After
-  public final void tearDownHBaseTable() throws IOException {
-    mAdmin.close();
-  }
+  //@After
+  //public final void tearDownHBaseTable() throws IOException {
+    //mAdmin.close();
+  //}
 
   @Test
   public void testGet() throws IOException {

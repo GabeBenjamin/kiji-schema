@@ -34,6 +34,9 @@
   <!-- Don't worry about checkstyle on apache foundation code. -->
   <suppress checks=".*" files="src/main/java/org/apache/"/>
 
+  <!-- Skip checkstyle on google code we copied in here. -->
+  <suppress checks=".*" files="src/main/java/com/google/"/>
+
   <!-- Don't worry about checkstyle on slf4j code. -->
   <suppress checks=".*" files="src/main/java/org/slf4j/"/>
 

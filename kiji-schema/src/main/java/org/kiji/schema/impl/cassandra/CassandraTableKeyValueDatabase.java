@@ -41,7 +41,7 @@ import org.kiji.schema.KijiTableKeyValueDatabase;
 import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.KeyValueBackup;
 import org.kiji.schema.avro.KeyValueBackupEntry;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 
 /**
 * Manages key-value pairs on a per table basis. Storage of these key-value pairs is provided by
@@ -157,7 +157,7 @@ public class CassandraTableKeyValueDatabase
    * @param uri The KijiURI of the instance for this table.
    */
   public static void install(CassandraAdmin admin, KijiURI uri) {
-    String tableName = KijiManagedCassandraTableName.getMetaKeyValueTableName(uri).toString();
+    String tableName = CassandraTableName.getMetaKeyValueTableName(uri).toString();
 
     // Standard C* table layout.  Use text key + timestamp as composite primary key to allow
     // selection by timestamp.

@@ -43,7 +43,7 @@ import org.kiji.schema.avro.MetaTableBackup;
 import org.kiji.schema.avro.TableBackup;
 import org.kiji.schema.avro.TableLayoutDesc;
 import org.kiji.schema.avro.TableLayoutsBackup;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.layout.KijiTableLayoutDatabase;
 import org.kiji.schema.layout.impl.cassandra.CassandraTableLayoutDatabase;
@@ -99,7 +99,7 @@ public final class CassandraMetaTable implements KijiMetaTable {
       CassandraAdmin admin)
       throws IOException {
     final String tableName =
-        KijiManagedCassandraTableName.getMetaLayoutTableName(kijiURI).toString();
+        CassandraTableName.getMetaLayoutTableName(kijiURI).toString();
     return admin.getCassandraTableInterface(tableName);
   }
 
@@ -118,7 +118,7 @@ public final class CassandraMetaTable implements KijiMetaTable {
       CassandraAdmin admin)
       throws IOException {
     final String tableName =
-        KijiManagedCassandraTableName.getMetaKeyValueTableName(kijiURI).toString();
+        CassandraTableName.getMetaKeyValueTableName(kijiURI).toString();
     return admin.getCassandraTableInterface(tableName);
   }
 
@@ -387,10 +387,10 @@ public final class CassandraMetaTable implements KijiMetaTable {
    */
   public static void uninstall(CassandraAdmin admin, KijiURI uri)
     throws IOException {
-    String tableName = KijiManagedCassandraTableName.getMetaKeyValueTableName(uri).toString();
+    String tableName = CassandraTableName.getMetaKeyValueTableName(uri).toString();
     admin.disableTable(tableName);
     admin.deleteTable(tableName);
-    tableName = KijiManagedCassandraTableName.getMetaLayoutTableName(uri).toString();
+    tableName = CassandraTableName.getMetaLayoutTableName(uri).toString();
     admin.disableTable(tableName);
     admin.deleteTable(tableName);
   }

@@ -40,7 +40,7 @@ import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiIOException;
 import org.kiji.schema.KijiTableWriter;
 import org.kiji.schema.cassandra.CassandraColumnName;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.impl.DefaultKijiCellEncoderFactory;
 import org.kiji.schema.impl.LayoutConsumer;
 import org.kiji.schema.layout.CassandraColumnNameTranslator;
@@ -261,8 +261,8 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
       String qualifier
   ) throws IOException {
     // Get a reference to the full name of the C* table for this column.
-    KijiManagedCassandraTableName cTableName =
-        KijiManagedCassandraTableName.getKijiCounterTableName(mTable.getURI(), mTable.getName());
+    CassandraTableName cTableName =
+        CassandraTableName.getKijiCounterTableName(mTable.getURI());
 
     final KijiColumnName columnName = new KijiColumnName(family, qualifier);
     final CassandraColumnName cassandraColumnName =
@@ -313,8 +313,8 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
     LOG.info("Incrementing the counter by " + counterIncrement);
 
     // Get a reference to the full name of the C* table for this column.
-    KijiManagedCassandraTableName cTableName =
-        KijiManagedCassandraTableName.getKijiCounterTableName(mTable.getURI(), mTable.getName());
+    CassandraTableName cTableName =
+        CassandraTableName.getKijiCounterTableName(mTable.getURI());
 
     final KijiColumnName columnName = new KijiColumnName(family, qualifier);
     final CassandraColumnName cassandraColumnName =

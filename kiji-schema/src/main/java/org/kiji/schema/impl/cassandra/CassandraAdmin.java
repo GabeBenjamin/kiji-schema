@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.kiji.schema.KijiURI;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 
 
 /**
@@ -89,7 +89,7 @@ public abstract class CassandraAdmin implements Closeable {
    * @param kijiURI The URI.
    */
   private void createKeyspaceIfMissingForURI(KijiURI kijiURI) {
-    String keyspace = KijiManagedCassandraTableName.getCassandraKeyspaceFormattedForCQL(kijiURI);
+    String keyspace = CassandraTableName.getQuotedKeyspace(kijiURI);
     LOG.info(String.format("Creating keyspace %s (if missing) for %s.", keyspace, kijiURI));
 
     // TODO: Check whether keyspace is > 48 characters long and if so provide Kiji error to user.
@@ -125,9 +125,6 @@ public abstract class CassandraAdmin implements Closeable {
    * @return An interface for the table.
    */
   public CassandraTableInterface createTable(String tableName, String createTableStatement) {
-    Preconditions.checkArgument(
-        KijiManagedCassandraTableName.tableNameIsFormattedForCQL(tableName));
-
     // TODO: Keep track of all tables associated with this session
     LOG.info("Creating table {} with statement {}.", tableName, createTableStatement);
     getSession().execute(createTableStatement);
@@ -147,8 +144,6 @@ public abstract class CassandraAdmin implements Closeable {
    * @return The interface for the specified Cassandra table.
    */
   public CassandraTableInterface getCassandraTableInterface(String tableName) {
-    Preconditions.checkArgument(
-        KijiManagedCassandraTableName.tableNameIsFormattedForCQL(tableName));
     assert(tableExists(tableName));
     return CassandraTableInterface.createFromCassandraAdmin(this, tableName);
   }
@@ -180,8 +175,6 @@ public abstract class CassandraAdmin implements Closeable {
    * @param tableName of the table to delete.
    */
   public void deleteTable(String tableName) {
-    Preconditions.checkArgument(
-        KijiManagedCassandraTableName.tableNameIsFormattedForCQL(tableName));
     // TODO: Check first that the table actually exists?
     String queryString = String.format("DROP TABLE IF EXISTS %s;", tableName);
     LOG.info("Deleting table " + tableName);
@@ -197,7 +190,7 @@ public abstract class CassandraAdmin implements Closeable {
     Preconditions.checkNotNull(getSession());
     Preconditions.checkNotNull(getSession().getCluster());
     Preconditions.checkNotNull(getSession().getCluster().getMetadata());
-    String keyspace = KijiManagedCassandraTableName.getCassandraKeyspaceFormattedForCQL(mKijiURI);
+    String keyspace = CassandraTableName.getQuotedKeyspace(mKijiURI);
     Preconditions.checkNotNull(getSession().getCluster().getMetadata().getKeyspace(keyspace));
     Collection<TableMetadata> tables =
         getSession().getCluster().getMetadata().getKeyspace(keyspace).getTables();
@@ -209,7 +202,7 @@ public abstract class CassandraAdmin implements Closeable {
    */
   public void deleteKeyspace() {
     // TODO: Track whether keyspace exists and assert appropriate keyspace state in all methods.
-    String keyspace = KijiManagedCassandraTableName.getCassandraKeyspaceFormattedForCQL(mKijiURI);
+    String keyspace = CassandraTableName.getQuotedKeyspace(mKijiURI);
     String queryString = "DROP KEYSPACE " + keyspace;
     getSession().execute(queryString);
     assert (!keyspaceExists(keyspace));
@@ -224,17 +217,13 @@ public abstract class CassandraAdmin implements Closeable {
    * @return Whether the table exists.
    */
   public boolean tableExists(String tableName) {
-    Preconditions.checkArgument(
-        KijiManagedCassandraTableName.tableNameIsFormattedForCQL(tableName));
     Preconditions.checkNotNull(getSession());
     Metadata metadata = getSession().getCluster().getMetadata();
 
-    String keyspace = KijiManagedCassandraTableName.getCassandraKeyspaceFormattedForCQL(mKijiURI);
+    String keyspace = CassandraTableName.getQuotedKeyspace(mKijiURI);
 
     if (null == metadata.getKeyspace(keyspace)) {
-      assert(!keyspaceExists(
-          KijiManagedCassandraTableName.getCassandraKeyspaceFormattedForCQL(mKijiURI)
-      ));
+      assert(!keyspaceExists(CassandraTableName.getQuotedKeyspace(mKijiURI)));
       return false;
     }
 

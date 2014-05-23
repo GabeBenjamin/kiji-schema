@@ -47,7 +47,7 @@ import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.RowKeyEncoding;
 import org.kiji.schema.avro.RowKeyFormat;
 import org.kiji.schema.avro.TableLayoutDesc;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.impl.Versions;
 import org.kiji.schema.layout.InvalidLayoutException;
 import org.kiji.schema.layout.KijiTableLayout;
@@ -623,9 +623,10 @@ public final class CassandraKiji implements Kiji {
     Preconditions.checkState(state == State.OPEN,
         "Cannot delete table in Kiji instance %s in state %s.", this, state);
     // Delete from Cassandra.
-    String mainTable = KijiManagedCassandraTableName.getKijiTableName(mURI, tableName).toString();
+    final KijiURI tableURI = KijiURI.newBuilder(mURI).withTableName(tableName).build();
+    String mainTable = CassandraTableName.getKijiTableName(tableURI).toString();
     String counterTable =
-        KijiManagedCassandraTableName.getKijiCounterTableName(mURI, tableName).toString();
+        CassandraTableName.getKijiCounterTableName(tableURI).toString();
     CassandraAdmin admin = getCassandraAdmin();
 
     admin.disableTable(mainTable);
@@ -812,12 +813,9 @@ public final class CassandraKiji implements Kiji {
 
     // Super-primitive right now.  Assume that max versions is always 1.
 
-    // Get a reference to the name of the Kiji table.
-    String kijiTableName = tableLayout.getName();
-
     // Create a C* table name for this Kiji table.
     String tableName =
-        KijiManagedCassandraTableName.getKijiTableName(mURI, kijiTableName).toString();
+        CassandraTableName.getKijiTableName(tableURI).toString();
 
     // Create the table!
     mAdmin.createTable(tableName, CQLUtils.getCreateTableStatement(tableName, layout));
@@ -827,8 +825,7 @@ public final class CassandraKiji implements Kiji {
 
     // Also create a second table, which we can use for counters.
     // Create a C* table name for this Kiji table.
-    String counterTableName =
-        KijiManagedCassandraTableName.getKijiCounterTableName(mURI, kijiTableName).toString();
+    String counterTableName = CassandraTableName.getKijiCounterTableName(tableURI).toString();
 
     String createCounterTableStatement =
         CQLUtils.getCreateCounterTableStatement(counterTableName, layout);

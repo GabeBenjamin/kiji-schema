@@ -55,7 +55,7 @@ import org.kiji.schema.avro.SchemaType;
 import org.kiji.schema.avro.TableLayoutBackupEntry;
 import org.kiji.schema.avro.TableLayoutDesc;
 import org.kiji.schema.avro.TableLayoutsBackup;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.impl.AvroCellEncoder;
 import org.kiji.schema.impl.cassandra.CassandraAdmin;
 import org.kiji.schema.impl.cassandra.CassandraByteUtil;
@@ -213,7 +213,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
    * @param uri The KijiURI of the instance for this table.
    */
   public static void install(CassandraAdmin admin, KijiURI uri) {
-    String tableName = KijiManagedCassandraTableName.getMetaLayoutTableName(uri).toString();
+    String tableName = CassandraTableName.getMetaLayoutTableName(uri).toString();
 
     // Standard C* table layout.  Use text key + timestamp as composite primary key to allow
     // selection by timestamp.

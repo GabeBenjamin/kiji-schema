@@ -40,7 +40,7 @@ import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.KijiDataRequest;
 import org.kiji.schema.KijiTableReader;
 import org.kiji.schema.cassandra.CassandraColumnName;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.layout.CassandraColumnNameTranslator;
 
 /**
@@ -145,14 +145,10 @@ public class CassandraDataRequestAdapter {
     Preconditions.checkArgument(!(pagingEnabled && bIsScan));
 
     // Get the Cassandra table name for non-counter values.
-    String nonCounterTableName = KijiManagedCassandraTableName.getKijiTableName(
-        table.getURI(),
-        table.getName()).toString();
+    String nonCounterTableName = CassandraTableName.getKijiTableName(table.getURI()).toString();
 
     // Get the counter table name.
-    String counterTableName = KijiManagedCassandraTableName.getKijiCounterTableName(
-        table.getURI(),
-        table.getName()).toString();
+    String counterTableName = CassandraTableName.getKijiCounterTableName(table.getURI()).toString();
 
     // A single Kiji data request can result in many Cassandra queries, so we use asynchronous IO
     // and keep a list of all of the futures that will contain results from Cassandra.

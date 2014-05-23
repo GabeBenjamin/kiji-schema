@@ -60,7 +60,7 @@ import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.MD5Hash;
 import org.kiji.schema.avro.SchemaTableBackup;
 import org.kiji.schema.avro.SchemaTableEntry;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.util.BytesKey;
 import org.kiji.schema.util.Debug;
 import org.kiji.schema.util.Lock;
@@ -283,7 +283,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       CassandraAdmin admin)
       throws IOException {
     return admin.getCassandraTableInterface(
-        KijiManagedCassandraTableName.getSchemaHashTableName(kijiURI).toString());
+        CassandraTableName.getSchemaHashTableName(kijiURI).toString());
   }
 
   /**
@@ -301,7 +301,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       CassandraAdmin admin)
       throws IOException {
     return admin.getCassandraTableInterface(
-        KijiManagedCassandraTableName.getSchemaIdTableName(kijiURI).toString());
+        CassandraTableName.getSchemaIdTableName(kijiURI).toString());
   }
 
   /**
@@ -319,7 +319,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       CassandraAdmin admin)
       throws IOException {
     return admin.getCassandraTableInterface(
-        KijiManagedCassandraTableName.getSchemaCounterTableName(kijiURI).toString());
+        CassandraTableName.getSchemaCounterTableName(kijiURI).toString());
   }
 
   /**
@@ -886,15 +886,15 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
 
     CassandraTableInterface hashTable = installHashTable(
         admin,
-        KijiManagedCassandraTableName.getSchemaHashTableName(kijiURI).toString());
+        CassandraTableName.getSchemaHashTableName(kijiURI).toString());
 
     CassandraTableInterface idTable = installIdTable(
         admin,
-        KijiManagedCassandraTableName.getSchemaIdTableName(kijiURI).toString());
+        CassandraTableName.getSchemaIdTableName(kijiURI).toString());
 
     CassandraTableInterface counterTable = installCounterTable(
         admin,
-        KijiManagedCassandraTableName.getSchemaCounterTableName(kijiURI).toString());
+        CassandraTableName.getSchemaCounterTableName(kijiURI).toString());
 
     final CassandraSchemaTable schemaTable = new CassandraSchemaTable(
         hashTable,
@@ -934,15 +934,15 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
   public static void uninstall(CassandraAdmin admin, KijiURI kijiURI)
       throws IOException {
     final String hashTableName =
-        KijiManagedCassandraTableName.getSchemaHashTableName(kijiURI).toString();
+        CassandraTableName.getSchemaHashTableName(kijiURI).toString();
     deleteTable(admin, hashTableName);
 
     final String idTableName =
-        KijiManagedCassandraTableName.getSchemaIdTableName(kijiURI).toString();
+        CassandraTableName.getSchemaIdTableName(kijiURI).toString();
     deleteTable(admin, idTableName);
 
     final String counterTableName =
-        KijiManagedCassandraTableName.getSchemaCounterTableName(kijiURI).toString();
+        CassandraTableName.getSchemaCounterTableName(kijiURI).toString();
     deleteTable(admin, counterTableName);
   }
 

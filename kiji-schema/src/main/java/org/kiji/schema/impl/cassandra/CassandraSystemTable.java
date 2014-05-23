@@ -48,7 +48,7 @@ import org.kiji.schema.KijiSystemTable;
 import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.SystemTableBackup;
 import org.kiji.schema.avro.SystemTableEntry;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.impl.Versions;
 import org.kiji.schema.util.CloseableIterable;
 import org.kiji.schema.util.Debug;
@@ -122,7 +122,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
       CassandraAdmin admin)
       throws IOException {
     final String tableName =
-        KijiManagedCassandraTableName.getSystemTableName(kijiURI).toString();
+        CassandraTableName.getSystemTableName(kijiURI).toString();
     // Check that the table already exists!
     if (!admin.tableExists(tableName)) {
       LOG.info("Cannot find table " + tableName + ", assuming Kiji not installed...");
@@ -369,7 +369,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
     // Install the table.  Sadly, we have to just use blobs and byte arrays here, so that we are
     // compliant with everything else in Kiji.  :(
     String systemTableName =
-        KijiManagedCassandraTableName.getSystemTableName(kijiURI).toString();
+        CassandraTableName.getSystemTableName(kijiURI).toString();
 
     // The layout of this table is straightforward - just blob to blob!
     // TODO: Any check here first for whether the table exists?
@@ -398,8 +398,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
   public static void uninstall(CassandraAdmin admin, KijiURI kijiURI)
       throws IOException {
     // TODO: Does this actually need to do anything beyond dropping the table?
-    final String tableName =
-        KijiManagedCassandraTableName.getSystemTableName(kijiURI).toString();
+    final String tableName = CassandraTableName.getSystemTableName(kijiURI).toString();
     admin.disableTable(tableName);
     admin.deleteTable(tableName);
   }

@@ -32,7 +32,7 @@ import org.kiji.schema.EntityId;
 import org.kiji.schema.KijiColumnName;
 import org.kiji.schema.NoSuchColumnException;
 import org.kiji.schema.cassandra.CassandraColumnName;
-import org.kiji.schema.cassandra.KijiManagedCassandraTableName;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.layout.impl.CellEncoderProvider;
 
@@ -58,10 +58,8 @@ class CassandraKijiWriterCommon {
   public CassandraKijiWriterCommon(CassandraKijiTable table) {
     mTable = table;
     mAdmin = mTable.getAdmin();
-    mTableName = KijiManagedCassandraTableName
-        .getKijiTableName(mTable.getURI(), mTable.getName()).toString();
-    mCounterTableName = KijiManagedCassandraTableName
-        .getKijiCounterTableName(mTable.getURI(), mTable.getName()).toString();
+    mTableName = CassandraTableName.getKijiTableName(mTable.getURI()).toString();
+    mCounterTableName = CassandraTableName.getKijiCounterTableName(mTable.getURI()).toString();
   }
 
   /**

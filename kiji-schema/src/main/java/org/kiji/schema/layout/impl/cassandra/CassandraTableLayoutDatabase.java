@@ -146,7 +146,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   // TODO: Don't need to separate statement preparation after adding separate statement cache.
   /** Prepare statement. */
   private void setPreparedStatementGetRows() {
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
 
     String queryText = String.format(
         "SELECT * FROM %s WHERE %s=? LIMIT 1",
@@ -159,7 +159,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   // TODO: Don't need to separate statement preparation after adding separate statement cache.
   /** Prepare statement. */
   private void setPreparedStatementUpdateTableLayout() {
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
 
     String queryText = String.format(
         "INSERT INTO %s (%s, %s, %s, %s, %s) VALUES (?, ?, ?, ?, ?)",
@@ -175,7 +175,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   // TODO: Don't need to separate statement preparation after adding separate statement cache.
   /** Prepare statement. */
   private void setPreparedStatementRemoveAllTableLayoutVersions() {
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
     String queryText = String.format(
         "DELETE FROM %s WHERE %s=?",
         metaTableName,
@@ -187,7 +187,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   // TODO: Don't need to separate statement preparation after adding separate statement cache.
   /** Prepare statement. */
   private void setPreparedStatementRemoveRecentTableLayoutVersions() {
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
     String queryText = String.format(
         "DELETE FROM %s WHERE %s=? AND %s=?",
         metaTableName,
@@ -213,7 +213,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
    * @param uri The KijiURI of the instance for this table.
    */
   public static void install(CassandraAdmin admin, KijiURI uri) {
-    String tableName = CassandraTableName.getMetaLayoutTableName(uri).toString();
+    CassandraTableName tableName = CassandraTableName.getMetaLayoutTableName(uri);
 
     // Standard C* table layout.  Use text key + timestamp as composite primary key to allow
     // selection by timestamp.
@@ -508,10 +508,10 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
 
   /** {@inheritDoc} */
   @Override
-  public void restoreLayoutsFromBackup(String tableName, TableLayoutsBackup layoutBackup) throws
-      IOException {
+  public void restoreLayoutsFromBackup(String tableName, TableLayoutsBackup layoutBackup)
+      throws IOException {
     LOG.info(String.format("Restoring layout history for table '%s'.", tableName));
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
 
     // Looks like we need insertions with and without updates and timestamps.
 

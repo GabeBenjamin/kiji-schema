@@ -145,10 +145,12 @@ public class CassandraDataRequestAdapter {
     Preconditions.checkArgument(!(pagingEnabled && bIsScan));
 
     // Get the Cassandra table name for non-counter values.
-    String nonCounterTableName = CassandraTableName.getKijiTableName(table.getURI()).toString();
+    final CassandraTableName nonCounterTableName =
+        CassandraTableName.getKijiTableName(table.getURI());
 
     // Get the counter table name.
-    String counterTableName = CassandraTableName.getKijiCounterTableName(table.getURI()).toString();
+    final CassandraTableName counterTableName =
+        CassandraTableName.getKijiCounterTableName(table.getURI());
 
     // A single Kiji data request can result in many Cassandra queries, so we use asynchronous IO
     // and keep a list of all of the futures that will contain results from Cassandra.
@@ -191,7 +193,7 @@ public class CassandraDataRequestAdapter {
       // separate session.execute(statement) commands.
 
       // Determine whether we need to read non-counter values and/or counter values.
-      List<String> tableNames = Lists.newArrayList();
+      List<CassandraTableName> tableNames = Lists.newArrayList();
 
       if (maybeContainsNonCounterValues(table, kijiColumnName)) {
         tableNames.add(nonCounterTableName);
@@ -201,7 +203,7 @@ public class CassandraDataRequestAdapter {
         tableNames.add(counterTableName);
       }
 
-      for (String cassandraTableName : tableNames) {
+      for (CassandraTableName cassandraTableName : tableNames) {
         if (bIsScan) {
           Statement statement = CQLUtils.getColumnScanStatement(
               admin,

@@ -282,8 +282,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    return admin.getCassandraTableInterface(
-        CassandraTableName.getSchemaHashTableName(kijiURI).toString());
+    return admin.getCassandraTableInterface(CassandraTableName.getSchemaHashTableName(kijiURI));
   }
 
   /**
@@ -300,8 +299,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    return admin.getCassandraTableInterface(
-        CassandraTableName.getSchemaIdTableName(kijiURI).toString());
+    return admin.getCassandraTableInterface(CassandraTableName.getSchemaIdTableName(kijiURI));
   }
 
   /**
@@ -318,8 +316,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    return admin.getCassandraTableInterface(
-        CassandraTableName.getSchemaCounterTableName(kijiURI).toString());
+    return admin.getCassandraTableInterface(CassandraTableName.getSchemaCounterTableName(kijiURI));
   }
 
   /**
@@ -464,7 +461,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    * @param incrementAmount Amount by which to increment the counter (can be negative).
    */
   private void incrementSchemaIdCounter(long incrementAmount) {
-    String tableName = mCounterTable.getTableName();
+    CassandraTableName tableName = mCounterTable.getTableName();
     String incrementSign = incrementAmount >= 0 ? "+" : "-";
     String queryText = String.format("UPDATE %s SET %s = %s %s %d WHERE %s='%s';",
         tableName,
@@ -564,7 +561,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    * @throws java.io.IOException on I/O error.
    */
   private SchemaTableEntry loadFromIdTable(long schemaId) throws IOException {
-    String tableName = mSchemaIdTable.getTableName();
+    CassandraTableName tableName = mSchemaIdTable.getTableName();
 
     // TODO: Prepare this statement once in constructor, not every load.
     String queryText = String.format(
@@ -784,7 +781,9 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    * @param tableName name of the schema hash table to create.
    * @return a reference to the created schema hash table.
    */
-  private static CassandraTableInterface installHashTable(CassandraAdmin admin, String tableName) {
+  private static CassandraTableInterface installHashTable(
+      CassandraAdmin admin,
+      CassandraTableName tableName) {
     // Let's try to make this somewhat readable...
     // TODO: Table should order by DESC for time
     String tableDescription = String.format(
@@ -806,7 +805,10 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    * @param tableName name of the schema ID table to create.
    * @return a reference to the created schema ID table.
    */
-  private static CassandraTableInterface installIdTable(CassandraAdmin admin, String tableName) {
+  private static CassandraTableInterface installIdTable(
+      CassandraAdmin admin,
+      CassandraTableName tableName
+  ) {
     // TODO: Table should order by DESC for time
     String tableDescription = String.format(
         "CREATE TABLE %s (%s bigint, %s timestamp, %s blob, PRIMARY KEY (%s, %s));",
@@ -830,7 +832,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    */
   private static CassandraTableInterface installCounterTable(
       CassandraAdmin admin,
-      String tableName) throws IOException {
+      CassandraTableName tableName) throws IOException {
     String tableDescription = String.format(
         "CREATE TABLE %s (%s text PRIMARY KEY, %s counter);",
         tableName,
@@ -884,17 +886,14 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
     //        while writing an entry.
     //      - with different schemas on MD5 hash collisions.
 
-    CassandraTableInterface hashTable = installHashTable(
-        admin,
-        CassandraTableName.getSchemaHashTableName(kijiURI).toString());
+    CassandraTableInterface hashTable =
+        installHashTable(admin, CassandraTableName.getSchemaHashTableName(kijiURI));
 
-    CassandraTableInterface idTable = installIdTable(
-        admin,
-        CassandraTableName.getSchemaIdTableName(kijiURI).toString());
+    CassandraTableInterface idTable =
+        installIdTable(admin, CassandraTableName.getSchemaIdTableName(kijiURI));
 
-    CassandraTableInterface counterTable = installCounterTable(
-        admin,
-        CassandraTableName.getSchemaCounterTableName(kijiURI).toString());
+    CassandraTableInterface counterTable =
+        installCounterTable(admin, CassandraTableName.getSchemaCounterTableName(kijiURI));
 
     final CassandraSchemaTable schemaTable = new CassandraSchemaTable(
         hashTable,
@@ -915,7 +914,7 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    * @param admin C* admin client.
    * @param tableName Name of the table to delete.
    */
-  private static void deleteTable(CassandraAdmin admin, String tableName) {
+  private static void deleteTable(CassandraAdmin admin, CassandraTableName tableName) {
     if (admin.tableExists(tableName)) {
       if (admin.isTableEnabled(tableName)) {
         admin.disableTable(tableName);
@@ -933,16 +932,14 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    */
   public static void uninstall(CassandraAdmin admin, KijiURI kijiURI)
       throws IOException {
-    final String hashTableName =
-        CassandraTableName.getSchemaHashTableName(kijiURI).toString();
+    final CassandraTableName hashTableName = CassandraTableName.getSchemaHashTableName(kijiURI);
     deleteTable(admin, hashTableName);
 
-    final String idTableName =
-        CassandraTableName.getSchemaIdTableName(kijiURI).toString();
+    final CassandraTableName idTableName = CassandraTableName.getSchemaIdTableName(kijiURI);
     deleteTable(admin, idTableName);
 
-    final String counterTableName =
-        CassandraTableName.getSchemaCounterTableName(kijiURI).toString();
+    final CassandraTableName counterTableName =
+        CassandraTableName.getSchemaCounterTableName(kijiURI);
     deleteTable(admin, counterTableName);
   }
 

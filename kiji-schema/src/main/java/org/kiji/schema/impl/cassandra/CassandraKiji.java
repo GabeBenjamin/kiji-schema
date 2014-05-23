@@ -624,9 +624,8 @@ public final class CassandraKiji implements Kiji {
         "Cannot delete table in Kiji instance %s in state %s.", this, state);
     // Delete from Cassandra.
     final KijiURI tableURI = KijiURI.newBuilder(mURI).withTableName(tableName).build();
-    String mainTable = CassandraTableName.getKijiTableName(tableURI).toString();
-    String counterTable =
-        CassandraTableName.getKijiCounterTableName(tableURI).toString();
+    final CassandraTableName mainTable = CassandraTableName.getKijiTableName(tableURI);
+    final CassandraTableName counterTable = CassandraTableName.getKijiCounterTableName(tableURI);
     CassandraAdmin admin = getCassandraAdmin();
 
     admin.disableTable(mainTable);
@@ -814,8 +813,7 @@ public final class CassandraKiji implements Kiji {
     // Super-primitive right now.  Assume that max versions is always 1.
 
     // Create a C* table name for this Kiji table.
-    String tableName =
-        CassandraTableName.getKijiTableName(tableURI).toString();
+    final CassandraTableName tableName = CassandraTableName.getKijiTableName(tableURI);
 
     // Create the table!
     mAdmin.createTable(tableName, CQLUtils.getCreateTableStatement(tableName, layout));
@@ -825,7 +823,8 @@ public final class CassandraKiji implements Kiji {
 
     // Also create a second table, which we can use for counters.
     // Create a C* table name for this Kiji table.
-    String counterTableName = CassandraTableName.getKijiCounterTableName(tableURI).toString();
+    final CassandraTableName counterTableName =
+        CassandraTableName.getKijiCounterTableName(tableURI);
 
     String createCounterTableStatement =
         CQLUtils.getCreateCounterTableStatement(counterTableName, layout);

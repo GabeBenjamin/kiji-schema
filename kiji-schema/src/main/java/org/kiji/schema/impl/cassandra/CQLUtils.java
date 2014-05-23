@@ -41,6 +41,7 @@ import org.kiji.schema.KijiRowKeyComponents;
 import org.kiji.schema.avro.ComponentType;
 import org.kiji.schema.avro.RowKeyComponent;
 import org.kiji.schema.avro.RowKeyFormat2;
+import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.layout.KijiTableLayout;
 
 /**
@@ -355,7 +356,9 @@ public final class CQLUtils {
    * @param layout of kiji table.
    * @return a CQL 'CREATE TABLE' statement which will create the provided table.
    */
-  public static String getCreateTableStatement(String tableName, KijiTableLayout layout) {
+  public static String getCreateTableStatement(
+      CassandraTableName tableName,
+      KijiTableLayout layout) {
     return getCreateTableStatement(tableName, layout, BYTES_TYPE);
   }
 
@@ -367,7 +370,9 @@ public final class CQLUtils {
    * @param layout of kiji table.
    * @return a CQL 'CREATE TABLE' statement which will create the provided table's counter table.
    */
-  public static String getCreateCounterTableStatement(String tableName, KijiTableLayout layout) {
+  public static String getCreateCounterTableStatement(
+      CassandraTableName tableName,
+      KijiTableLayout layout) {
     return getCreateTableStatement(tableName, layout, COUNTER_TYPE);
   }
 
@@ -381,7 +386,7 @@ public final class CQLUtils {
    * @return a CQL 'CREATE TABLE' statement for the table.
    */
   private static String getCreateTableStatement(
-      String tableName,
+      CassandraTableName tableName,
       KijiTableLayout layout,
       String valueType) {
     LinkedHashMap<String, String> columns = getPrimaryKeyColumnTypes(layout);
@@ -396,9 +401,7 @@ public final class CQLUtils {
     //   ORDER BY (${ClusterColumn1} ASC, ${ClusterColumn2} ASC..., ${VERSION_COL} DESC);
 
     StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ")
-      .append(tableName)
-      .append(" (");
+    sb.append("CREATE TABLE ").append(tableName).append(" (");
 
     COMMA_JOINER.withKeyValueSeparator(" ").appendTo(sb, columns);
 
@@ -431,7 +434,7 @@ public final class CQLUtils {
    * @param columnName of column to create index on.
    * @return a CQL statement to create a secondary index on the provided table and column.
    */
-  public static String getCreateIndexStatement(String tableName, String columnName) {
+  public static String getCreateIndexStatement(CassandraTableName tableName, String columnName) {
     return String.format("CREATE INDEX ON %s (%s)", tableName, columnName);
   }
 
@@ -457,7 +460,7 @@ public final class CQLUtils {
   public static Statement getColumnGetStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityId,
       String localityGroup,
       ByteBuffer family,
@@ -552,7 +555,7 @@ public final class CQLUtils {
   public static Statement getColumnScanStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       String localityGroup,
       ByteBuffer family,
       ByteBuffer qualifier) {
@@ -621,7 +624,7 @@ public final class CQLUtils {
   public static Statement getEntityIDScanStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName) {
+      CassandraTableName tableName) {
 
     // statement being built:
     //  "SELECT token(${PartitionKeyComponent1}, ${PartitionKeyComponent2} ...), ${EIDColumn1},
@@ -659,7 +662,7 @@ public final class CQLUtils {
   public static Statement getIncrementCounterStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityID,
       String localityGroup,
       ByteBuffer family,
@@ -717,7 +720,7 @@ public final class CQLUtils {
   public static Statement getInsertStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityId,
       String localityGroup,
       ByteBuffer family,
@@ -783,7 +786,7 @@ public final class CQLUtils {
   public static Statement getDeleteCellStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityID,
       String localityGroup,
       ByteBuffer family,
@@ -812,7 +815,7 @@ public final class CQLUtils {
   public static Statement getDeleteColumnStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityID,
       String localityGroup,
       ByteBuffer family,
@@ -839,7 +842,7 @@ public final class CQLUtils {
   public static Statement getDeleteFamilyStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityID,
       String localityGroup,
       ByteBuffer family
@@ -862,7 +865,7 @@ public final class CQLUtils {
   public static Statement getDeleteRowStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityID
   ) {
     return getDeleteStatement(
@@ -885,7 +888,7 @@ public final class CQLUtils {
   private static Statement getDeleteStatement(
       CassandraAdmin admin,
       KijiTableLayout layout,
-      String tableName,
+      CassandraTableName tableName,
       EntityId entityId,
       String localityGroup,
       ByteBuffer family,

@@ -19,6 +19,8 @@
 
 package org.kiji.schema.impl.cassandra;
 
+import org.kiji.schema.cassandra.CassandraTableName;
+
 /**
  * Provides interface somewhat like HTableInterface, but for C*.
  *
@@ -41,7 +43,7 @@ public final class CassandraTableInterface {
   private final CassandraAdmin mAdmin;
 
   /** Name of the table. */
-  private final String mTableName;
+  private final CassandraTableName mTableName;
 
   /**
    * Get the CassandraAdmin for this table.
@@ -55,11 +57,11 @@ public final class CassandraTableInterface {
    *
    * @return the table name.
    */
-  public String getTableName() { return mTableName; }
+  public CassandraTableName getTableName() { return mTableName; }
 
   /** {@inheritDoc} */
   @Override
-  public String toString() { return mTableName; }
+  public String toString() { return mTableName.toString(); }
 
   // TODO: This might need to do some cleanup, handle some reference counting, etc.
   /**
@@ -75,7 +77,9 @@ public final class CassandraTableInterface {
    * @param tableName Name of the table in question.  Should already exist.
    * @return A new CassandraTableInterface object.
    */
-  static CassandraTableInterface createFromCassandraAdmin(CassandraAdmin admin, String tableName) {
+  static CassandraTableInterface createFromCassandraAdmin(
+      CassandraAdmin admin,
+      CassandraTableName tableName) {
     // TODO: Verify that the table already exists!
     return new CassandraTableInterface(admin, tableName);
   }
@@ -86,7 +90,7 @@ public final class CassandraTableInterface {
    * @param admin The cassandra admin for this table (and Kiji instance).
    * @param tableName The name of the table.
    */
-  private CassandraTableInterface(CassandraAdmin admin, String tableName) {
+  private CassandraTableInterface(CassandraAdmin admin, CassandraTableName tableName) {
     this.mAdmin = admin;
     this.mTableName = tableName;
   }

@@ -157,7 +157,7 @@ public class CassandraTableKeyValueDatabase
    * @param uri The KijiURI of the instance for this table.
    */
   public static void install(CassandraAdmin admin, KijiURI uri) {
-    String tableName = CassandraTableName.getMetaKeyValueTableName(uri).toString();
+    CassandraTableName tableName = CassandraTableName.getMetaKeyValueTableName(uri);
 
     // Standard C* table layout.  Use text key + timestamp as composite primary key to allow
     // selection by timestamp.
@@ -173,8 +173,7 @@ public class CassandraTableKeyValueDatabase
         KV_COLUMN_KEY,
         KV_COLUMN_TIME,
         KV_COLUMN_KEY,
-        KV_COLUMN_TIME
-        );
+        KV_COLUMN_TIME);
     admin.createTable(tableName, tableDescription);
 
     // Create secondary index for time.  Should be acceptable given that these key-value databases
@@ -266,15 +265,14 @@ public class CassandraTableKeyValueDatabase
    * @param tableName the name of the table from which to fetch all rows to log.
    */
   private void logRowsForTable(String tableName) {
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
 
     // Get all of the keys for this table before the remove
     ResultSet resultSet = mTable.getAdmin().execute(String.format(
         "SELECT * from %s where %s='%s'",
         metaTableName,
         KV_COLUMN_TABLE,
-        tableName
-    ));
+        tableName));
     LOG.info("Rows for table " + tableName);
     for (Row row: resultSet.all()) {
       LOG.info("\t" + row.toString());
@@ -314,13 +312,9 @@ public class CassandraTableKeyValueDatabase
   public Set<String> tableSet() throws IOException {
     // Just return a set of in-use tables
 
-    String metaTableName = mTable.getTableName();
+    CassandraTableName metaTableName = mTable.getTableName();
 
-    String queryText = String.format(
-        "SELECT %s FROM %s",
-        KV_COLUMN_TABLE,
-        metaTableName
-    );
+    String queryText = String.format("SELECT %s FROM %s", KV_COLUMN_TABLE, metaTableName);
 
     ResultSet resultSet = mTable.getAdmin().execute(queryText);
     Set<String> keys = new HashSet<String>();
@@ -382,7 +376,7 @@ public class CassandraTableKeyValueDatabase
              + "and value '%s' to the metatable named '%s'.",
          tableName,
          key,
-         "" + timestamp,
+         timestamp,
          valAsByteBuffer.toString(),
          mTable.getTableName()));
 

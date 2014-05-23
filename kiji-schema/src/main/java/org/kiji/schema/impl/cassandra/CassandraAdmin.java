@@ -30,13 +30,11 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.kiji.schema.KijiURI;
 import org.kiji.schema.cassandra.CassandraTableName;
-
 
 /**
  * Lightweight wrapper to mimic the functionality of HBaseAdmin (and provide other functionality).
@@ -124,7 +122,9 @@ public abstract class CassandraAdmin implements Closeable {
    * @param createTableStatement A string with the table layout.
    * @return An interface for the table.
    */
-  public CassandraTableInterface createTable(String tableName, String createTableStatement) {
+  public CassandraTableInterface createTable(
+      CassandraTableName tableName,
+      String createTableStatement) {
     // TODO: Keep track of all tables associated with this session
     LOG.info("Creating table {} with statement {}.", tableName, createTableStatement);
     getSession().execute(createTableStatement);
@@ -143,7 +143,7 @@ public abstract class CassandraAdmin implements Closeable {
    * @param tableName The name of the table for which to return an interface.
    * @return The interface for the specified Cassandra table.
    */
-  public CassandraTableInterface getCassandraTableInterface(String tableName) {
+  public CassandraTableInterface getCassandraTableInterface(CassandraTableName tableName) {
     assert(tableExists(tableName));
     return CassandraTableInterface.createFromCassandraAdmin(this, tableName);
   }
@@ -155,7 +155,7 @@ public abstract class CassandraAdmin implements Closeable {
    *
    * @param tableName of the table to disable.
    */
-  public void disableTable(String tableName) { }
+  public void disableTable(CassandraTableName tableName) { }
 
   // TODO: Just return true for now since we aren't disabling any Cassandra tables yet.
 
@@ -165,7 +165,7 @@ public abstract class CassandraAdmin implements Closeable {
    * @param tableName of the table to check.
    * @return whether the table is enabled.
    */
-  public boolean isTableEnabled(String tableName) {
+  public boolean isTableEnabled(CassandraTableName tableName) {
     return true;
   }
 
@@ -174,7 +174,7 @@ public abstract class CassandraAdmin implements Closeable {
    *
    * @param tableName of the table to delete.
    */
-  public void deleteTable(String tableName) {
+  public void deleteTable(CassandraTableName tableName) {
     // TODO: Check first that the table actually exists?
     String queryString = String.format("DROP TABLE IF EXISTS %s;", tableName);
     LOG.info("Deleting table " + tableName);
@@ -216,7 +216,7 @@ public abstract class CassandraAdmin implements Closeable {
    * @param tableName of the Cassandra table to check for.
    * @return Whether the table exists.
    */
-  public boolean tableExists(String tableName) {
+  public boolean tableExists(CassandraTableName tableName) {
     Preconditions.checkNotNull(getSession());
     Metadata metadata = getSession().getCluster().getMetadata();
 
@@ -227,10 +227,7 @@ public abstract class CassandraAdmin implements Closeable {
       return false;
     }
 
-    // Use the quoted table name without the keyspace.
-    String quotedTableNameNoKeyspace = StringUtils.replace(tableName, keyspace + ".", "", 1);
-    Preconditions.checkArgument(!quotedTableNameNoKeyspace.equals(tableName));
-    return metadata.getKeyspace(keyspace).getTable(quotedTableNameNoKeyspace) != null;
+    return metadata.getKeyspace(keyspace).getTable(tableName.getQuotedTable()) != null;
   }
 
   // TODO: Implement close method

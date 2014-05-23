@@ -121,8 +121,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    final String tableName =
-        CassandraTableName.getSystemTableName(kijiURI).toString();
+    final CassandraTableName tableName = CassandraTableName.getSystemTableName(kijiURI);
     // Check that the table already exists!
     if (!admin.tableExists(tableName)) {
       LOG.info("Cannot find table " + tableName + ", assuming Kiji not installed...");
@@ -368,8 +367,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
       throws IOException {
     // Install the table.  Sadly, we have to just use blobs and byte arrays here, so that we are
     // compliant with everything else in Kiji.  :(
-    String systemTableName =
-        CassandraTableName.getSystemTableName(kijiURI).toString();
+    CassandraTableName systemTableName = CassandraTableName.getSystemTableName(kijiURI);
 
     // The layout of this table is straightforward - just blob to blob!
     // TODO: Any check here first for whether the table exists?
@@ -398,7 +396,7 @@ public final class CassandraSystemTable implements KijiSystemTable {
   public static void uninstall(CassandraAdmin admin, KijiURI kijiURI)
       throws IOException {
     // TODO: Does this actually need to do anything beyond dropping the table?
-    final String tableName = CassandraTableName.getSystemTableName(kijiURI).toString();
+    final CassandraTableName tableName = CassandraTableName.getSystemTableName(kijiURI);
     admin.disableTable(tableName);
     admin.deleteTable(tableName);
   }

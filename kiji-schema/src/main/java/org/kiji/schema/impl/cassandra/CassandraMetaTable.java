@@ -98,8 +98,7 @@ public final class CassandraMetaTable implements KijiMetaTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    final String tableName =
-        CassandraTableName.getMetaLayoutTableName(kijiURI).toString();
+    final CassandraTableName tableName = CassandraTableName.getMetaLayoutTableName(kijiURI);
     return admin.getCassandraTableInterface(tableName);
   }
 
@@ -117,8 +116,7 @@ public final class CassandraMetaTable implements KijiMetaTable {
       Configuration conf,
       CassandraAdmin admin)
       throws IOException {
-    final String tableName =
-        CassandraTableName.getMetaKeyValueTableName(kijiURI).toString();
+    final CassandraTableName tableName = CassandraTableName.getMetaKeyValueTableName(kijiURI);
     return admin.getCassandraTableInterface(tableName);
   }
 
@@ -387,12 +385,13 @@ public final class CassandraMetaTable implements KijiMetaTable {
    */
   public static void uninstall(CassandraAdmin admin, KijiURI uri)
     throws IOException {
-    String tableName = CassandraTableName.getMetaKeyValueTableName(uri).toString();
-    admin.disableTable(tableName);
-    admin.deleteTable(tableName);
-    tableName = CassandraTableName.getMetaLayoutTableName(uri).toString();
-    admin.disableTable(tableName);
-    admin.deleteTable(tableName);
+    final CassandraTableName metaKeyValueTableName =
+        CassandraTableName.getMetaKeyValueTableName(uri);
+    admin.disableTable(metaKeyValueTableName);
+    admin.deleteTable(metaKeyValueTableName);
+    final CassandraTableName metaLayoutTableName = CassandraTableName.getMetaLayoutTableName(uri);
+    admin.disableTable(metaLayoutTableName);
+    admin.deleteTable(metaLayoutTableName);
   }
 
   /** {@inheritDoc} */

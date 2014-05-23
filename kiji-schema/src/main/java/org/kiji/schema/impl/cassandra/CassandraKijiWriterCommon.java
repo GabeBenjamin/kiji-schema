@@ -46,9 +46,9 @@ class CassandraKijiWriterCommon {
 
   private final CassandraKijiTable mTable;
 
-  private final String mTableName;
+  private final CassandraTableName mTableName;
 
-  private final String mCounterTableName;
+  private final CassandraTableName mCounterTableName;
 
   /**
    * Create an object for performing common write operations for a given table.
@@ -58,8 +58,8 @@ class CassandraKijiWriterCommon {
   public CassandraKijiWriterCommon(CassandraKijiTable table) {
     mTable = table;
     mAdmin = mTable.getAdmin();
-    mTableName = CassandraTableName.getKijiTableName(mTable.getURI()).toString();
-    mCounterTableName = CassandraTableName.getKijiCounterTableName(mTable.getURI()).toString();
+    mTableName = CassandraTableName.getKijiTableName(mTable.getURI());
+    mCounterTableName = CassandraTableName.getKijiCounterTableName(mTable.getURI());
   }
 
   /**

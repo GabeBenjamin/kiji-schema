@@ -271,7 +271,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
     Statement statement = CQLUtils.getColumnGetStatement(
         mAdmin,
         mTable.getLayout(),
-        cTableName.toString(),
+        cTableName,
         entityId,
         cassandraColumnName.getLocalityGroup(),
         cassandraColumnName.getFamilyBuffer(),
@@ -324,7 +324,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
         CQLUtils.getIncrementCounterStatement(
             mAdmin,
             mTable.getLayout(),
-            cTableName.toString(),
+            cTableName,
             entityId,
             cassandraColumnName.getLocalityGroup(),
             cassandraColumnName.getFamilyBuffer(),

@@ -204,7 +204,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
       throws IOException {
     // Check whether this col is a counter; if so, do special counter write.
     if (isCounterColumn(family, qualifier)) {
-      doCounterPut(entityId, family, qualifier, value);
+      doCounterPut(entityId, family, qualifier, (Long) value);
     } else {
       put(entityId, family, qualifier, System.currentTimeMillis(), value);
     }
@@ -237,7 +237,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
    * @param family of the column to check.
    * @param qualifier of the column to check.
    * @return whether the column contains a counter value.
-   * @throws java.io.IOException if there is a problem getting the table layout.
+   * @throws IOException if there is a problem getting the table layout.
    */
   private boolean isCounterColumn(String family, String qualifier) throws IOException {
     return mWriterLayoutCapsule
@@ -253,7 +253,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
    * @param family of the column containing the counter.
    * @param qualifier of the column containing the counter.
    * @return the value of the counter.
-   * @throws java.io.IOException if there is a problem reading the counter value.
+   * @throws IOException if there is a problem reading the counter value.
    */
   private long getCounterValue(
       EntityId entityId,
@@ -265,7 +265,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
         CassandraTableName.getKijiCounterTableName(mTable.getURI());
 
     final KijiColumnName columnName = new KijiColumnName(family, qualifier);
-    final CassandraColumnName cassandraColumnName =
+    final CassandraColumnName cassandraColumn =
         mWriterLayoutCapsule.getColumnNameTranslator().toCassandraColumnName(columnName);
 
     Statement statement = CQLUtils.getColumnGetStatement(
@@ -273,9 +273,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
         mTable.getLayout(),
         cTableName,
         entityId,
-        cassandraColumnName.getLocalityGroup(),
-        cassandraColumnName.getFamilyBuffer(),
-        cassandraColumnName.getQualifierBuffer(),
+        cassandraColumn,
         null,
         null,
         null,
@@ -303,7 +301,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
    * @param family of the column containing the counter.
    * @param qualifier of the column containing the counter.
    * @param counterIncrement by which to increment the counter.
-   * @throws java.io.IOException if there is a problem incrementing the counter value.
+   * @throws IOException if there is a problem incrementing the counter value.
    */
   private void incrementCounterValue(
       EntityId entityId,
@@ -317,7 +315,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
         CassandraTableName.getKijiCounterTableName(mTable.getURI());
 
     final KijiColumnName columnName = new KijiColumnName(family, qualifier);
-    final CassandraColumnName cassandraColumnName =
+    final CassandraColumnName cassandraColumn =
         mWriterLayoutCapsule.getColumnNameTranslator().toCassandraColumnName(columnName);
 
     mAdmin.execute(
@@ -326,9 +324,7 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
             mTable.getLayout(),
             cTableName,
             entityId,
-            cassandraColumnName.getLocalityGroup(),
-            cassandraColumnName.getFamilyBuffer(),
-            cassandraColumnName.getQualifierBuffer(),
+            cassandraColumn,
             counterIncrement));
   }
 
@@ -338,14 +334,14 @@ public final class CassandraKijiTableWriter implements KijiTableWriter {
    * @param family of the column containing the counter.
    * @param qualifier of the column containing the counter.
    * @param value to write to the counter.
-   * @param <T> The value to write to the counter.
-   * @throws java.io.IOException if there is a problem writing the counter.
+   * @throws IOException if there is a problem writing the counter.
    */
-  private <T> void doCounterPut(
+  private void doCounterPut(
       EntityId entityId,
       String family,
       String qualifier,
-      T value) throws IOException {
+      long value
+  ) throws IOException {
     final State state = mState.get();
     Preconditions.checkState(state == State.OPEN,
         "Cannot put cell to KijiTableWriter instance %s in state %s.", this, state);

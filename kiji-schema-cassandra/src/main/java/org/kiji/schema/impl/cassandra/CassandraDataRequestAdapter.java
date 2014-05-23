@@ -20,7 +20,6 @@
 package org.kiji.schema.impl.cassandra;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -180,13 +179,10 @@ public class CassandraDataRequestAdapter {
       assert (!(pagingEnabled && !column.isPagingEnabled()));
 
       // Translate the Kiji column name.
-      KijiColumnName kijiColumnName = new KijiColumnName(column.getName());
-      LOG.info("Kiji column name for the requested column is " + kijiColumnName);
-      CassandraColumnName cassandraColumnName =
-          mColumnNameTranslator.toCassandraColumnName(kijiColumnName);
-      String localityGroup = cassandraColumnName.getLocalityGroup();
-      ByteBuffer family = cassandraColumnName.getFamilyBuffer();
-      ByteBuffer qualifier = cassandraColumnName.getQualifierBuffer();
+      KijiColumnName kijiColumn = new KijiColumnName(column.getName());
+      LOG.info("Kiji column name for the requested column is " + kijiColumn);
+      CassandraColumnName cassandraColumn =
+          mColumnNameTranslator.toCassandraColumnName(kijiColumn);
 
       // TODO: Optimize these queries such that we need only one RPC per column family.
       // (Right now a data request that asks for "info:foo" and "info:bar" would trigger two
@@ -195,11 +191,11 @@ public class CassandraDataRequestAdapter {
       // Determine whether we need to read non-counter values and/or counter values.
       List<CassandraTableName> tableNames = Lists.newArrayList();
 
-      if (maybeContainsNonCounterValues(table, kijiColumnName)) {
+      if (maybeContainsNonCounterValues(table, kijiColumn)) {
         tableNames.add(nonCounterTableName);
       }
 
-      if (maybeContainsCounterValues(table, kijiColumnName)) {
+      if (maybeContainsCounterValues(table, kijiColumn)) {
         tableNames.add(counterTableName);
       }
 
@@ -209,9 +205,7 @@ public class CassandraDataRequestAdapter {
               admin,
               table.getLayout(),
               cassandraTableName,
-              localityGroup,
-              family,
-              qualifier);
+              cassandraColumn);
           if (pagingEnabled) {
             statement.setFetchSize(column.getPageSize());
           }
@@ -223,13 +217,11 @@ public class CassandraDataRequestAdapter {
                   table.getLayout(),
                   cassandraTableName,
                   entityId,
-                  localityGroup,
-                  family,
-                  qualifier,
+                  cassandraColumn,
                   null,
-                  qualifier == null ? null : minTimestamp,
-                  qualifier == null ? null : maxTimestamp,
-                  qualifier == null ? null : column.getMaxVersions());
+                  cassandraColumn.containsQualifier() ? minTimestamp : null,
+                  cassandraColumn.containsQualifier() ? maxTimestamp : null,
+                  cassandraColumn.containsQualifier() ? column.getMaxVersions() : null);
           if (pagingEnabled) {
             statement.setFetchSize(column.getPageSize());
           }

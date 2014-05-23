@@ -134,9 +134,7 @@ class CassandraKijiWriterCommon {
         mTable.getLayout(),
         mTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer(),
-        cassandraColumn.getQualifierBuffer(),
+        cassandraColumn,
         timestamp,
         valueBytes,
         ttl);
@@ -169,9 +167,7 @@ class CassandraKijiWriterCommon {
         mTable.getLayout(),
         mTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer(),
-        cassandraColumn.getQualifierBuffer(),
+        cassandraColumn,
         version);
   }
 
@@ -197,9 +193,7 @@ class CassandraKijiWriterCommon {
         mTable.getLayout(),
         mTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer(),
-        cassandraColumn.getQualifierBuffer());
+        cassandraColumn);
   }
 
   /**
@@ -227,9 +221,7 @@ class CassandraKijiWriterCommon {
         mTable.getLayout(),
         mCounterTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer(),
-        cassandraColumn.getQualifierBuffer());
+        cassandraColumn);
   }
 
   /**
@@ -247,13 +239,12 @@ class CassandraKijiWriterCommon {
     final CassandraColumnName cassandraColumn =
         mTable.getColumnNameTranslator().toCassandraColumnName(kijiColumnName);
 
-    return CQLUtils.getDeleteFamilyStatement(
+    return CQLUtils.getDeleteColumnStatement(
         mAdmin,
         mTable.getLayout(),
         mTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer());
+        cassandraColumn);
   }
 
 
@@ -273,13 +264,12 @@ class CassandraKijiWriterCommon {
     final CassandraColumnName cassandraColumn =
         mTable.getColumnNameTranslator().toCassandraColumnName(kijiColumnName);
 
-    return CQLUtils.getDeleteFamilyStatement(
+    return CQLUtils.getDeleteColumnStatement(
         mAdmin,
         mTable.getLayout(),
         mCounterTableName,
         entityId,
-        cassandraColumn.getLocalityGroup(),
-        cassandraColumn.getFamilyBuffer());
+        cassandraColumn);
   }
 
   /**

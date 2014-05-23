@@ -21,6 +21,7 @@ package org.kiji.schema.cassandra;
 import java.nio.ByteBuffer;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -48,11 +49,17 @@ public final class CassandraColumnName {
   /**
    * Creates a new {@link org.kiji.schema.cassandra.CassandraColumnName} instance.
    *
-   * @param localityGroup Cassandra locality group, not null.
-   * @param family Cassandra column family, not null.
-   * @param qualifier Cassandra column qualifier.
+   * @param localityGroup Cassandra locality group, nullable.
+   * @param family Cassandra column family, nullable (must be null if locality group is null).
+   * @param qualifier Cassandra column qualifier, nullable (must be null if family is null).
    */
   public CassandraColumnName(String localityGroup, byte[] family, byte[] qualifier) {
+    if (localityGroup == null) {
+      Preconditions.checkArgument(family == null, "Cannot have a family without a locality group.");
+    }
+    if (family == null) {
+      Preconditions.checkArgument(qualifier == null, "Cannot have a qualifier without a family.");
+    }
     mLocalityGroup = localityGroup;
     mFamily = family;
     mQualifier = qualifier;
@@ -61,13 +68,19 @@ public final class CassandraColumnName {
   /**
    * Creates a new {@link org.kiji.schema.cassandra.CassandraColumnName} instance.
    *
-   * @param localityGroup Cassandra locality group, not null.
-   * @param family Cassandra column family, not null.
-   * @param qualifier Cassandra column qualifier.
+   * @param localityGroup Cassandra locality group, nullable.
+   * @param family Cassandra column family, nullable (must be null if locality group is null).
+   * @param qualifier Cassandra column qualifier, nullable (must be null if family is null).
    */
   public CassandraColumnName(String localityGroup, ByteBuffer family, ByteBuffer qualifier) {
+    if (localityGroup == null) {
+      Preconditions.checkArgument(family == null, "Cannot have a family without a locality group.");
+    }
+    if (family == null) {
+      Preconditions.checkArgument(qualifier == null, "Cannot have a qualifier without a family.");
+    }
     mLocalityGroup = localityGroup;
-    mFamily = CassandraByteUtil.byteBuffertoBytes(family);
+    mFamily = family == null ? null : CassandraByteUtil.byteBuffertoBytes(family);
     mQualifier = qualifier == null ? null : CassandraByteUtil.byteBuffertoBytes(qualifier);
   }
 
@@ -104,7 +117,7 @@ public final class CassandraColumnName {
    * @return the family.
    */
   public ByteBuffer getFamilyBuffer() {
-    return ByteBuffer.wrap(mFamily);
+    return mFamily == null ? null : ByteBuffer.wrap(mFamily);
   }
 
   /**
@@ -115,6 +128,35 @@ public final class CassandraColumnName {
   public ByteBuffer getQualifierBuffer() {
     return mQualifier == null ? null : ByteBuffer.wrap(mQualifier);
   }
+
+  /**
+   * Returns true if this {@link CassandraColumnName} includes a locality group.
+   *
+   * @return if this {@link CassandraColumnName} includes a locality group.
+   */
+  public boolean containsLocalityGroup() {
+    return mLocalityGroup != null;
+  }
+
+  /**
+   * Returns true if this {@link CassandraColumnName} includes a family.
+   *
+   * @return if this {@link CassandraColumnName} includes a family.
+   */
+  public boolean containsFamily() {
+    return mFamily != null;
+  }
+
+  /**
+   * Returns true if this {@link CassandraColumnName} includes a qualifier.
+   *
+   * @return if this {@link CassandraColumnName} includes a qualifier.
+   */
+  public boolean containsQualifier() {
+    return mQualifier != null;
+  }
+
+
 
   /** {@inheritDoc} */
   @Override

@@ -45,7 +45,7 @@ import org.kiji.schema.NoSuchColumnException;
 import org.kiji.schema.filter.KijiColumnFilter;
 import org.kiji.schema.hbase.HBaseColumnName;
 import org.kiji.schema.hbase.HBaseScanOptions;
-import org.kiji.schema.layout.KijiColumnNameTranslator;
+import org.kiji.schema.layout.HBaseColumnNameTranslator;
 import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.layout.KijiTableLayout.LocalityGroupLayout.FamilyLayout;
 import org.kiji.schema.platform.SchemaPlatformBridge;
@@ -62,7 +62,7 @@ public final class HBaseDataRequestAdapter {
   /** The wrapped KijiDataRequest. */
   private final KijiDataRequest mKijiDataRequest;
   /** The translator for generating HBase column names. */
-  private final KijiColumnNameTranslator mColumnNameTranslator;
+  private final HBaseColumnNameTranslator mColumnNameTranslator;
 
   /**
    * Creates a new HBaseDataRequestAdapter for a given data request using a given
@@ -72,7 +72,7 @@ public final class HBaseDataRequestAdapter {
    * @param translator the name translator for getting HBase column names.
    */
   public HBaseDataRequestAdapter(KijiDataRequest kijiDataRequest,
-                                 KijiColumnNameTranslator translator) {
+                                 HBaseColumnNameTranslator translator) {
     mKijiDataRequest = kijiDataRequest;
     mColumnNameTranslator = translator;
   }
@@ -395,14 +395,14 @@ public final class HBaseDataRequestAdapter {
    */
   private static final class NameTranslatingFilterContext extends KijiColumnFilter.Context {
     /** The translator to use. */
-    private final KijiColumnNameTranslator mTranslator;
+    private final HBaseColumnNameTranslator mTranslator;
 
     /**
      * Initialize this context with the specified column name translator.
      *
      * @param translator the translator to use.
      */
-    private NameTranslatingFilterContext(KijiColumnNameTranslator translator) {
+    private NameTranslatingFilterContext(HBaseColumnNameTranslator translator) {
       mTranslator = translator;
     }
 

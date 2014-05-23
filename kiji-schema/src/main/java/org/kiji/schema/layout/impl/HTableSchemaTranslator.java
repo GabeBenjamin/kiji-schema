@@ -23,10 +23,11 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 
 import org.kiji.annotations.ApiAudience;
+import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.LocalityGroupDesc;
 import org.kiji.schema.avro.TableLayoutDesc;
 import org.kiji.schema.hbase.KijiManagedHBaseTableName;
-import org.kiji.schema.layout.KijiColumnNameTranslator;
+import org.kiji.schema.layout.HBaseColumnNameTranslator;
 import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.layout.KijiTableLayout.LocalityGroupLayout;
 
@@ -48,15 +49,17 @@ public final class HTableSchemaTranslator {
   /**
    * Translates a Kiji table layout into an HColumnDescriptor.
    *
-   * @param kijiInstanceName The name of the Kiji instance the table lives in.
+   * @param tableURI The uri of the Kiji table.
    * @param tableLayout The Kiji table layout.
    * @return The HTableDescriptor to use for storing the Kiji table data.
    */
-  public HTableDescriptor toHTableDescriptor(String kijiInstanceName, KijiTableLayout tableLayout) {
+  public HTableDescriptor toHTableDescriptor(
+      KijiURI tableURI,
+      KijiTableLayout tableLayout) {
     // Figure out the name of the table.
     final String tableName = tableLayout.getName();
     final KijiManagedHBaseTableName hbaseTableName =
-        KijiManagedHBaseTableName.getKijiTableName(kijiInstanceName, tableName);
+        KijiManagedHBaseTableName.getKijiTableName(tableURI.getInstance(), tableName);
     final HTableDescriptor tableDescriptor = new HTableDescriptor(hbaseTableName.toString());
       TableLayoutDesc tableLayoutDesc = tableLayout.getDesc();
 
@@ -67,11 +70,11 @@ public final class HTableSchemaTranslator {
         tableDescriptor.setMemStoreFlushSize(tableLayoutDesc.getMemstoreFlushsize());
     }
 
-    KijiColumnNameTranslator kijiColumnNameTranslator = KijiColumnNameTranslator.from(tableLayout);
+    HBaseColumnNameTranslator translator = HBaseColumnNameTranslator.from(tableLayout);
 
     // Add the columns.
     for (LocalityGroupLayout localityGroup : tableLayout.getLocalityGroupMap().values()) {
-      tableDescriptor.addFamily(toHColumnDescriptor(localityGroup, kijiColumnNameTranslator));
+      tableDescriptor.addFamily(toHColumnDescriptor(localityGroup, translator));
     }
 
     return tableDescriptor;
@@ -81,13 +84,13 @@ public final class HTableSchemaTranslator {
    * Translates a Kiji locality group into an HColumnDescriptor.
    *
    * @param localityGroup A Kiji locality group.
-   * @param kijiColumnNameTranslator to convert the locality group into the HBase family.
+   * @param hbaseColumnNameTranslator to convert the locality group into the HBase family.
    * @return The HColumnDescriptor to use for storing the data in the locality group.
    */
   private static HColumnDescriptor toHColumnDescriptor(
       LocalityGroupLayout localityGroup,
-      KijiColumnNameTranslator kijiColumnNameTranslator) {
-    byte[] hbaseFamilyName = kijiColumnNameTranslator.toHBaseFamilyName(localityGroup);
+      HBaseColumnNameTranslator hbaseColumnNameTranslator) {
+    byte[] hbaseFamilyName = hbaseColumnNameTranslator.toHBaseFamilyName(localityGroup);
 
     LocalityGroupDesc groupDesc = localityGroup.getDesc();
     return new HColumnDescriptor(

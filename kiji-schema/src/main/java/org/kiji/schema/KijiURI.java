@@ -75,7 +75,7 @@ import org.kiji.schema.util.KijiNameValidator;
  */
 @ApiAudience.Public
 @ApiStability.Stable
-public final class KijiURI {
+public class KijiURI {
 
   /** URI/URL scheme used to fully qualify a Kiji table. */
   public static final String KIJI_SCHEME = "kiji";
@@ -90,10 +90,10 @@ public final class KijiURI {
   public static final int DEFAULT_ZOOKEEPER_CLIENT_PORT = 2181;
 
   /** ZooKeeper quorum configured from the local environment.*/
-  private static final ImmutableList<String> ENV_ZOOKEEPER_QUORUM;
+  protected static final ImmutableList<String> ENV_ZOOKEEPER_QUORUM;
 
   /** ZooKeeper client port configured from the local environment. */
-  private static final int ENV_ZOOKEEPER_CLIENT_PORT;
+  protected static final int ENV_ZOOKEEPER_CLIENT_PORT;
 
   /**
    * Resolves the local environment ZooKeeper parameters.
@@ -144,7 +144,7 @@ public final class KijiURI {
    * @param columnNames Column names.
    * @throws KijiURIException If the parameters are invalid.
    */
-  private KijiURI(
+  protected KijiURI(
       Iterable<String> zookeeperQuorum,
       int zookeeperClientPort,
       String instanceName,
@@ -217,24 +217,24 @@ public final class KijiURI {
   /**
    * Builder class for constructing KijiURIs.
    */
-  public static final class KijiURIBuilder {
+  public static class KijiURIBuilder {
     /**
      * Zookeeper quorum: comma-separated list of Zookeeper host names or IP addresses.
      * Preserves user ordering.
      */
-    private ImmutableList<String> mZookeeperQuorum;
+    protected ImmutableList<String> mZookeeperQuorum;
 
     /** Zookeeper client port number. */
-    private int mZookeeperClientPort;
+    protected int mZookeeperClientPort;
 
     /** Kiji instance name. Null means unset. */
-    private String mInstanceName;
+    protected String mInstanceName;
 
     /** Kiji table name. Null means unset. */
-    private String mTableName;
+    protected String mTableName;
 
     /** Kiji column names. Never null. Empty means unset. Preserves user ordering. */
-    private ImmutableList<KijiColumnName> mColumnNames;
+    protected ImmutableList<KijiColumnName> mColumnNames;
 
     /**
      * Constructs a new builder for KijiURIs.
@@ -245,7 +245,7 @@ public final class KijiURI {
      * @param tableName The initial table name.
      * @param columnNames The initial column names.
      */
-    private KijiURIBuilder(
+    protected KijiURIBuilder(
         Iterable<String> zookeeperQuorum,
         int zookeeperClientPort,
         String instanceName,
@@ -263,7 +263,7 @@ public final class KijiURI {
      * Constructs a new builder for KijiURIs with default values.
      * See {@link KijiURI#newBuilder()} for specific values.
      */
-    private KijiURIBuilder() {
+    protected KijiURIBuilder() {
       mZookeeperQuorum = ENV_ZOOKEEPER_QUORUM;
       mZookeeperClientPort = ENV_ZOOKEEPER_CLIENT_PORT;
       mInstanceName = KConstants.DEFAULT_INSTANCE_NAME;
@@ -398,7 +398,7 @@ public final class KijiURI {
   /**
    * Private class for parsing the authority portion of a KijiURI.
    */
-  private static class AuthorityParser {
+  static class AuthorityParser {
     private final ImmutableList<String> mZookeeperQuorum;
     private final int mZookeeperClientPort;
 
@@ -508,6 +508,9 @@ public final class KijiURI {
    * @throws KijiURIException If the uri is invalid.
    */
   public static KijiURIBuilder newBuilder(String uri) {
+    if (uri.startsWith("kiji-cassandra://")) {
+      return CassandraKijiURI.newBuilder(uri);
+    }
     if (!uri.startsWith("kiji://")) {
       uri = String.format("%s/%s/", KConstants.DEFAULT_HBASE_URI, uri);
     }
@@ -637,8 +640,8 @@ public final class KijiURI {
   /**
    * Returns a string representation of this URI.
    *
-   * @param preserveOrdering Whether to preserve ordering of lsits in fields.
-   * @return A string reprresentation of this URI.
+   * @param preserveOrdering Whether to preserve ordering of lists in fields.
+   * @return A string representation of this URI.
    */
   private String toString(boolean preserveOrdering) {
     // Remove trailing unset fields.
@@ -690,7 +693,7 @@ public final class KijiURI {
    * @param preserveOrdering Whether to preserve ordering.
    * @return Representation of this KijiURI up to the authority.
    */
-  private String toStringAuthority(boolean preserveOrdering) {
+  protected String toStringAuthority(boolean preserveOrdering) {
     String zkQuorum;
     ImmutableList<String> zookeeperQuorum =
         preserveOrdering ? mZookeeperQuorum : mZookeeperQuorumNormalized;
@@ -715,7 +718,7 @@ public final class KijiURI {
    * @param preserveOrdering Whether to preserve ordering.
    * @return Representation of this KijiURI up to the instance.
    */
-  private String toStringInstance(boolean preserveOrdering) {
+  protected String toStringInstance(boolean preserveOrdering) {
     return String.format("%s%s/",
         toStringAuthority(preserveOrdering),
         (null == mInstanceName) ? UNSET_URI_STRING : mInstanceName);
@@ -727,7 +730,7 @@ public final class KijiURI {
    * @param preserveOrdering Whether to preserve ordering.
    * @return Representation of this KijiURI up to the table.
    */
-  private String toStringTable(boolean preserveOrdering) {
+  protected String toStringTable(boolean preserveOrdering) {
     return String.format("%s%s/",
         toStringInstance(preserveOrdering),
         (null == mTableName) ? UNSET_URI_STRING : mTableName);
@@ -739,7 +742,7 @@ public final class KijiURI {
    * @param preserveOrdering Whether to preserve ordering.
    * @return Representation of this KijiURI up to the table.
    */
-  private String toStringCol(boolean preserveOrdering) {
+  protected String toStringCol(boolean preserveOrdering) {
     String columnField;
     ImmutableList<KijiColumnName> columns =
         preserveOrdering ? mColumnNames : mColumnNamesNormalized;
@@ -768,4 +771,10 @@ public final class KijiURI {
       throw new KijiURIException(e.getMessage());
     }
   }
+
+  /**
+   * Indicate whether this is a URI for a Cassandra-backed Kiji instance.
+   * @return Whether this is a C* URI.
+   */
+  public boolean isCassandra() { return false; }
 }

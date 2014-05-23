@@ -56,9 +56,9 @@ import org.kiji.schema.impl.AvroCellEncoder;
 import org.kiji.schema.impl.hbase.HBaseKijiRowData;
 import org.kiji.schema.impl.hbase.HBaseKijiTable;
 import org.kiji.schema.layout.CellSpec;
-import org.kiji.schema.layout.KijiColumnNameTranslator;
+import org.kiji.schema.layout.HBaseColumnNameTranslator;
+import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.layout.KijiTableLayouts;
-import org.kiji.schema.layout.impl.LayoutCapsule;
 import org.kiji.schema.util.InstanceBuilder;
 
 public class TestHBaseKijiRowData extends KijiClientTest {
@@ -155,8 +155,8 @@ public class TestHBaseKijiRowData extends KijiClientTest {
     getKiji().createTable(KijiTableLayouts.getLayout(TEST_LAYOUT_V1));
     mTable = HBaseKijiTable.downcast(getKiji().openTable(TABLE_NAME));
 
-    final LayoutCapsule capsule = mTable.getLayoutCapsule();
-    final KijiColumnNameTranslator translator = capsule.getKijiColumnNameTranslator();
+    final KijiTableLayout layout = mTable.getLayout();
+    final HBaseColumnNameTranslator translator = HBaseColumnNameTranslator.from(layout);
     HBaseColumnName hcolumn = translator.toHBaseColumnName(new KijiColumnName("family", "empty"));
     mHBaseFamily = hcolumn.getFamily();
     mHBaseEmpty = hcolumn.getQualifier();
@@ -170,7 +170,7 @@ public class TestHBaseKijiRowData extends KijiClientTest {
         .getQualifier();
     mHBaseMapFamily = translator.toHBaseColumnName(new KijiColumnName("map")).getFamily();
 
-    mEntityIdFactory = EntityIdFactory.getFactory(capsule.getLayout());
+    mEntityIdFactory = EntityIdFactory.getFactory(layout);
   }
 
   @After
@@ -211,7 +211,7 @@ public class TestHBaseKijiRowData extends KijiClientTest {
 
     HBaseKijiRowData input = new HBaseKijiRowData(mTable, dataRequest, row0, result, null);
     input.getMap();
-    final int integer = (Integer) input.getMostRecentValue("family", "qual3");
+    final int integer = input.getMostRecentValue("family", "qual3");
     assertEquals(42, integer);
   }
 

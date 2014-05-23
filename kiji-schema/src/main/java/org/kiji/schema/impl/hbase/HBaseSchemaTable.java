@@ -275,6 +275,7 @@ public final class HBaseSchemaTable implements KijiSchemaTable {
    * @param uri URI of the Kiji instance this schema table belongs to.
    * @throws IOException on I/O error.
    */
+  // TODO: Possibly make this constructor private
   public HBaseSchemaTable(
       HTableInterface hashTable,
       HTableInterface idTable,

@@ -33,7 +33,10 @@ import org.kiji.schema.KConstants;
 import org.kiji.schema.KijiAlreadyExistsException;
 import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiURI;
+import org.kiji.schema.cassandra.CassandraFactory;
+import org.kiji.schema.cassandra.CassandraKijiInstaller;
 import org.kiji.schema.hbase.HBaseFactory;
+import org.kiji.schema.impl.cassandra.CassandraSystemTable;
 import org.kiji.schema.impl.hbase.HBaseSystemTable;
 
 /**
@@ -89,21 +92,40 @@ public final class InstallTool extends BaseTool {
   @Override
   protected int run(List<String> nonFlagArgs) throws Exception {
     getPrintStream().println("Creating kiji instance: " + mKijiURI);
-    getPrintStream().println("Creating meta tables for kiji instance in hbase...");
-    final Map<String, String> initialProperties = (null == mPropertiesFile)
-            ? EMPTY_MAP
-            : HBaseSystemTable.loadPropertiesFromFileToMap(mPropertiesFile);
-    try {
-      KijiInstaller.get().install(
-          mKijiURI,
-          HBaseFactory.Provider.get(),
-          initialProperties,
-          getConf());
-      getPrintStream().println("Successfully created kiji instance: " + mKijiURI);
-      return SUCCESS;
-    } catch (KijiAlreadyExistsException kaee) {
-      getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
-      return FAILURE;
+    getPrintStream().println("Creating meta tables for kiji instance...");
+
+    if (mKijiURI.isCassandra()) {
+      final Map<String, String> initialProperties = (null == mPropertiesFile)
+          ? EMPTY_MAP
+          : CassandraSystemTable.loadPropertiesFromFileToMap(mPropertiesFile);
+      try {
+        CassandraKijiInstaller.get().install(
+            mKijiURI,
+            CassandraFactory.Provider.get(),
+            initialProperties,
+            getConf());
+        getPrintStream().println("Successfully created Kiji instance: " + mKijiURI);
+        return SUCCESS;
+      } catch (KijiAlreadyExistsException kaee) {
+        getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
+        return FAILURE;
+      }
+    } else {
+      final Map<String, String> initialProperties = (null == mPropertiesFile)
+              ? EMPTY_MAP
+              : HBaseSystemTable.loadPropertiesFromFileToMap(mPropertiesFile);
+      try {
+        KijiInstaller.get().install(
+            mKijiURI,
+            HBaseFactory.Provider.get(),
+            initialProperties,
+            getConf());
+        getPrintStream().println("Successfully created kiji instance: " + mKijiURI);
+        return SUCCESS;
+      } catch (KijiAlreadyExistsException kaee) {
+        getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
+        return FAILURE;
+      }
     }
   }
 

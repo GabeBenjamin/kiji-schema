@@ -21,23 +21,21 @@ package org.kiji.schema.impl;
 import java.io.IOException;
 
 import org.kiji.annotations.ApiAudience;
-import org.kiji.schema.layout.impl.LayoutCapsule;
+import org.kiji.schema.layout.KijiTableLayout;
 
 /**
- * Interface for classes which hold table layout references which must be updated in response to a
- * table layout update.
+ * A callback interface which classes can override in order to be registered to receive
+ * notifications through calls to {@link #update(KijiTableLayout)} that a new
+ * {@link KijiTableLayout} is available for the table.
  */
 @ApiAudience.Private
 public interface LayoutConsumer {
 
   /**
-   * Replace existing layout dependent state in this object with state from the given LayoutCapsule.
-   * The table for which this layout consumer was opened is responsible for calling this method in
-   * response to an update to the table layout before the table should report that its update was
-   * successful.
+   * Called when the table layout changes.
    *
-   * @param capsule a container representing a snapshot of the layout dependent state of a table.
+   * @param layout The most recent layout of the Kiji table.
    * @throws IOException in case of an error updating.
    */
-  void update(LayoutCapsule capsule) throws IOException;
+  void update(KijiTableLayout layout) throws IOException;
 }

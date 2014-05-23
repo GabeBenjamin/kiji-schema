@@ -97,9 +97,6 @@ public final class CassandraKiji implements Kiji {
             }
           });
 
-  /** The hadoop configuration. */
-  private final Configuration mConf;
-
   /** Factory for CassandraTableInterface instances. */
   private final CassandraAdmin mAdmin;
 
@@ -171,19 +168,15 @@ public final class CassandraKiji implements Kiji {
    * <p> Caller does not need to use retain(), but must call release() when done with it.
    *
    * @param kijiURI the KijiURI.
-   * @param conf Hadoop Configuration. Deep copied internally.
    * @param admin CassandraAdmin wrapper around open C* session.
    * @param lockFactory Factory for locks.
    * @throws java.io.IOException on I/O error.
    */
   CassandraKiji(
       KijiURI kijiURI,
-      Configuration conf,
       CassandraAdmin admin,
       LockFactory lockFactory)
       throws IOException {
-    // Deep copy the configuration.
-    mConf = new Configuration(conf);
 
     // Validate arguments.
     mAdmin = Preconditions.checkNotNull(admin);
@@ -191,22 +184,13 @@ public final class CassandraKiji implements Kiji {
     Preconditions.checkArgument(kijiURI.isCassandra());
     mURI = Preconditions.checkNotNull(kijiURI);
 
-    // Configure the ZooKeeper quorum:
-    mConf.setStrings("hbase.zookeeper.quorum", mURI.getZookeeperQuorum().toArray(new String[0]));
-    mConf.setInt("hbase.zookeeper.property.clientPort", mURI.getZookeeperClientPort());
-
     // Check for an instance name.
     Preconditions.checkArgument(mURI.getInstance() != null,
         "KijiURI '%s' does not specify a Kiji instance name.", mURI);
 
-    if (LOG.isDebugEnabled()) {
-      Debug.logConfiguration(mConf);
-      LOG.debug(
-          "Opening kiji instance '{}'"
-          + " with client software version '{}'"
-          + " and client data version '{}'.",
-          mURI, VersionInfo.getSoftwareVersion(), VersionInfo.getClientDataVersion());
-    }
+    LOG.debug(
+        "Opening Kiji instance {} with client software version {} and client data version {}.",
+        mURI, VersionInfo.getSoftwareVersion(), VersionInfo.getClientDataVersion());
 
     try {
       mSystemTable = new CassandraSystemTable(mURI, mAdmin);
@@ -309,7 +293,8 @@ public final class CassandraKiji implements Kiji {
   /** {@inheritDoc} */
   @Override
   public Configuration getConf() {
-    return mConf;
+    throw new UnsupportedOperationException(
+        "Cassandra-backed Kiji instances do not support Hadoop configuration.");
   }
 
   /** {@inheritDoc} */
@@ -373,7 +358,7 @@ public final class CassandraKiji implements Kiji {
         "Cannot get security manager for Kiji instance %s in state %s.", this, state);
     if (null == mSecurityManager) {
       if (isSecurityEnabled()) {
-        mSecurityManager = CassandraKijiSecurityManager.create(mURI, getConf(), mAdmin);
+        mSecurityManager = CassandraKijiSecurityManager.create(mURI, mAdmin);
       } else {
         throw new KijiSecurityException("Cannot create a KijiSecurityManager for security version "
             + mSystemTable.getSecurityVersion() + ". Version must be "
@@ -392,7 +377,6 @@ public final class CassandraKiji implements Kiji {
     return new CassandraKijiTable(
         this,
         tableName,
-        mConf,
         mAdmin,
         mInstanceMonitor.getTableLayoutMonitor(tableName));
   }

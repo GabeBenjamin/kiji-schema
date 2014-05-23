@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 
 import org.kiji.annotations.ApiAudience;
 import org.kiji.delegation.Priority;
@@ -53,17 +52,17 @@ public final class CassandraKijiFactory implements KijiFactory {
   /** {@inheritDoc} */
   @Override
   public Kiji open(KijiURI uri) throws IOException {
-    return open(uri, HBaseConfiguration.create());
+    CassandraFactory cassandraFactory = CassandraFactory.Provider.get();
+    CassandraAdminFactory adminFactory = cassandraFactory.getCassandraAdminFactory(uri);
+    CassandraAdmin admin = adminFactory.create(uri);
+    return new CassandraKiji(uri, admin, cassandraFactory.getLockFactory(uri));
   }
 
   /** {@inheritDoc} */
   @Override
   public Kiji open(KijiURI uri, Configuration conf) throws IOException {
-    final Configuration confCopy = new Configuration(conf);
-    CassandraFactory cassandraFactory = CassandraFactory.Provider.get();
-    CassandraAdminFactory adminFactory = cassandraFactory.getCassandraAdminFactory(uri);
-    CassandraAdmin admin = adminFactory.create(uri);
-    return new CassandraKiji(uri, confCopy, admin, cassandraFactory.getLockFactory(uri, confCopy));
+    throw new UnsupportedOperationException(
+        "Cassandra-backed Kiji instances do not support Hadoop configuration.");
   }
 
   /** {@inheritDoc} */

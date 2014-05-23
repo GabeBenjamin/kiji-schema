@@ -25,7 +25,6 @@ import java.util.Map;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
 
 import org.kiji.annotations.ApiAudience;
 import org.kiji.delegation.Priority;
@@ -53,7 +52,7 @@ public final class DefaultCassandraFactory implements CassandraFactory {
 
   /** {@inheritDoc} */
   @Override
-  public LockFactory getLockFactory(KijiURI uri, Configuration conf) throws IOException {
+  public LockFactory getLockFactory(KijiURI uri) throws IOException {
     return getZooKeeperClient(uri).getLockFactory();
   }
 

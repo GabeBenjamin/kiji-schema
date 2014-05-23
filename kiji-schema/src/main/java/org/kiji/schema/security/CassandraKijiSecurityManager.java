@@ -27,7 +27,6 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.security.access.AccessControllerProtocol;
 import org.apache.hadoop.hbase.security.access.Permission.Action;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -85,18 +84,16 @@ public final class CassandraKijiSecurityManager implements KijiSecurityManager {
    * Factory method.
    *
    * @param uri of the Kiji instance.
-   * @param conf is the Hadoop configuration to use.
    * @param admin for the Kiji instance.
    * @return a new security manager.
    * @throws IOException if there is a problem talking to Cassandra.
    */
   public static CassandraKijiSecurityManager create(
       KijiURI uri,
-      Configuration conf,
       CassandraAdmin admin)
     throws IOException {
     // TODO: Put into a static class.
-    return new CassandraKijiSecurityManager(uri, conf, admin);
+    return new CassandraKijiSecurityManager(uri, admin);
 
   }
 
@@ -104,24 +101,20 @@ public final class CassandraKijiSecurityManager implements KijiSecurityManager {
    * Grants all permissions on an instance, the first time it's installed.
    *
    * @param instanceUri of the instance being installed.
-   * @param conf Hadoop configuration.
    * @param admin Wrapper around open C* session.
    * @throws IOException if the specified instance does not exist or on other I/O error.
    */
   public static void installInstanceCreator(
       KijiURI instanceUri,
-      Configuration conf,
       CassandraAdmin admin) throws  IOException {
 
-    create(instanceUri, conf, admin)
-        .grantInstanceCreator(KijiUser.getCurrentUser());
+    create(instanceUri, admin).grantInstanceCreator(KijiUser.getCurrentUser());
   }
 
   /**
    * Just a placeholder right now, since we don't have security set up yet for C*.
    *
    * @param instanceUri is the URI of the instance this KijiSecurityManager will manage.
-   * @param conf is the Hadoop configuration to use.
    * @param admin is a wrapper around an open C* session, used to access the HBase ACL table.
    * @throws java.io.IOException on I/O error.
    * @throws org.kiji.schema.security.KijiSecurityException if the Kiji security version is not
@@ -129,7 +122,6 @@ public final class CassandraKijiSecurityManager implements KijiSecurityManager {
    */
   CassandraKijiSecurityManager(
       KijiURI instanceUri,
-      Configuration conf,
       CassandraAdmin admin) throws IOException {
     mInstanceUri = instanceUri;
     mKiji = Kiji.Factory.get().open(mInstanceUri);

@@ -19,11 +19,11 @@
 
 package org.kiji.schema.tools;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public final class InstallTool extends BaseTool {
   private KijiURI mKijiURI = null;
 
   /** Unmodifiable empty map. */
-  private static final Map<String, String> EMPTY_MAP = Collections.emptyMap();
+  private static final Map<String, String> EMPTY_MAP = ImmutableMap.of();
 
   /** {@inheritDoc} */
   @Override
@@ -102,8 +102,7 @@ public final class InstallTool extends BaseTool {
         CassandraKijiInstaller.get().install(
             mKijiURI,
             CassandraFactory.Provider.get(),
-            initialProperties,
-            getConf());
+            initialProperties);
         getPrintStream().println("Successfully created Kiji instance: " + mKijiURI);
         return SUCCESS;
       } catch (KijiAlreadyExistsException kaee) {

@@ -103,7 +103,7 @@ public final class UninstallTool extends BaseTool {
       if (!mKijiURI.isCassandra()) {
         KijiInstaller.get().uninstall(mKijiURI, getConf());
       } else {
-        CassandraKijiInstaller.get().uninstall(mKijiURI, getConf());
+        CassandraKijiInstaller.get().uninstall(mKijiURI);
       }
       getPrintStream().println("Deleted kiji instance: " + mKijiURI.toString());
       return SUCCESS;

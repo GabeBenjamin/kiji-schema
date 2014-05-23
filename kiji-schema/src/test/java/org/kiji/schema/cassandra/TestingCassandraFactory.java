@@ -32,22 +32,22 @@ import com.google.common.collect.Maps;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.service.EmbeddedCassandraService;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
-import org.apache.zookeeper.KeeperException;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.test.TestingCluster;
+import org.apache.curator.utils.EnsurePath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.kiji.delegation.Priority;
 import org.kiji.schema.KijiIOException;
 import org.kiji.schema.KijiURI;
-import org.kiji.schema.RuntimeInterruptedException;
 import org.kiji.schema.impl.cassandra.CassandraAdminFactory;
 import org.kiji.schema.impl.cassandra.DefaultCassandraFactory;
 import org.kiji.schema.impl.cassandra.TestingCassandraAdminFactory;
 import org.kiji.schema.layout.impl.ZooKeeperClient;
 import org.kiji.schema.util.LocalLockFactory;
 import org.kiji.schema.util.LockFactory;
+import org.kiji.schema.zookeeper.ZooKeeperUtils;
 
 /** Factory for Cassandra instances based on URIs. */
 public final class TestingCassandraFactory implements CassandraFactory {
@@ -59,9 +59,6 @@ public final class TestingCassandraFactory implements CassandraFactory {
   /** Lock object to protect MINI_ZOOKEEPER_CLUSTER and MINIZK_CLIENT. */
   private static final Object MINIZK_CLUSTER_LOCK = new Object();
 
-  /** ZooKeeper mSession timeout, in milliseconds. */
-  private static final int ZKCLIENT_SESSION_TIMEOUT = 60 * 1000;  // 1 second
-
   /**
    * Singleton MiniZooKeeperCluster for testing.
    *
@@ -69,7 +66,7 @@ public final class TestingCassandraFactory implements CassandraFactory {
    *
    * Once started, the mini-cluster remains alive until the JVM shuts down.
    */
-  private static MiniZooKeeperCluster mMiniZkCluster;
+  private static TestingCluster mZKCluster;
 
   /**
    * Singleton Cassandra mSession for testing.
@@ -86,21 +83,10 @@ public final class TestingCassandraFactory implements CassandraFactory {
    *
    * This client will not be closed properly until the JVM shuts down.
    */
-  private static ZooKeeperClient mMiniZkClient;
+  private static volatile CuratorFramework mZKClient;
 
   /** Map from fake HBase ID to fake (local) lock factories. */
   private final Map<String, LockFactory> mLock = Maps.newHashMap();
-
-  /**
-   * Map from fake HBase ID to ZooKeeperClient.
-   *
-   * <p>
-   *   ZooKeeperClient instances in this map are never released:
-   *   unless client code releases ZooKeeperClient instance more than once,
-   *   the retain counter is always &ge; 1.
-   * </p>
-   */
-  private final Map<String, ZooKeeperClient> mZKClients = Maps.newHashMap();
 
   /**
    * Public constructor. This should not be directly invoked by users; you should
@@ -122,9 +108,6 @@ public final class TestingCassandraFactory implements CassandraFactory {
   @Override
   public CassandraAdminFactory getCassandraAdminFactory(KijiURI uri) {
     if (isFakeCassandraURI(uri)) {
-      String fakeCassandraID = getFakeCassandraID(uri);
-      Preconditions.checkNotNull(fakeCassandraID);
-
       // Make sure that the EmbeddedCassandraService is started
       try {
         startEmbeddedCassandraServiceIfNotRunningAndOpenSession();
@@ -133,7 +116,7 @@ public final class TestingCassandraFactory implements CassandraFactory {
       }
 
       // Get an admin factory that will work with the embedded service
-      return createFakeCassandraAdminFactory(fakeCassandraID);
+      return createFakeCassandraAdminFactory();
     } else {
       return DELEGATE.getCassandraAdminFactory(uri);
     }
@@ -179,11 +162,10 @@ public final class TestingCassandraFactory implements CassandraFactory {
 
   /**
    * Return a fake C* admin factory for testing.
-   * @param fakeCassandraID
    * @return A C* admin factory that will produce C* admins that will all use the shared
    *     EmbeddedCassandraService.
    */
-  private CassandraAdminFactory createFakeCassandraAdminFactory(String fakeCassandraID) {
+  private CassandraAdminFactory createFakeCassandraAdminFactory() {
     Preconditions.checkNotNull(mCassandraSession);
     return TestingCassandraAdminFactory.get(mCassandraSession);
   }
@@ -245,7 +227,7 @@ public final class TestingCassandraFactory implements CassandraFactory {
   // Locks and ZooKeeper stuff
   /** {@inheritDoc} */
   @Override
-  public LockFactory getLockFactory(KijiURI uri, Configuration conf) throws IOException {
+  public LockFactory getLockFactory(KijiURI uri) throws IOException {
     final String fakeID = getFakeCassandraID(uri);
     if (fakeID != null) {
       synchronized (mLock) {
@@ -258,7 +240,7 @@ public final class TestingCassandraFactory implements CassandraFactory {
         return newFactory;
       }
     }
-    return DELEGATE.getLockFactory(uri, conf);
+    return DELEGATE.getLockFactory(uri);
   }
 
   /** Resets the testing HBase factory. */
@@ -285,20 +267,17 @@ public final class TestingCassandraFactory implements CassandraFactory {
   private static String createZooKeeperAddressForFakeId(String fakeId) throws IOException {
 
     // Initializes the Mini ZooKeeperCluster, if necessary:
-    final MiniZooKeeperCluster zkCluster = getMiniZKCluster();
+    final TestingCluster zkCluster = getMiniZKCluster();
 
     // Create the chroot node for this fake ID, if necessary:
     try {
-      final File zkChroot = new File("/" + fakeId);
-      if (mMiniZkClient.exists(zkChroot) == null) {
-        mMiniZkClient.createNodeRecursively(new File("/" + fakeId));
-      }
-    } catch (KeeperException ke) {
-      throw new KijiIOException(ke);
+      new EnsurePath("/" + fakeId).ensure(mZKClient.getZookeeperClient());
+    } catch (Exception ke) {
+      ZooKeeperUtils.wrapAndRethrow(ke);
     }
 
     // Test ZooKeeperClients use a chroot to isolate testing environments.
-    return "localhost:" + zkCluster.getClientPort() + "/" + fakeId;
+    return zkCluster.getConnectString() + "/" + fakeId;
   }
 
   /**
@@ -309,25 +288,20 @@ public final class TestingCassandraFactory implements CassandraFactory {
    * @throws IOException in case of an error creating the temporary directory or starting the mini
    *    zookeeper cluster.
    */
-  private static MiniZooKeeperCluster getMiniZKCluster() throws IOException {
+  private static TestingCluster getMiniZKCluster() throws IOException {
     synchronized (MINIZK_CLUSTER_LOCK) {
-      if (mMiniZkCluster == null) {
-        final MiniZooKeeperCluster miniZK = new MiniZooKeeperCluster(new Configuration());
-        final File tempDir = File.createTempFile("mini-zk-cluster", "dir");
-        Preconditions.checkState(tempDir.delete());
-        Preconditions.checkState(tempDir.mkdirs());
+      if (mZKCluster == null) {
         try {
-          miniZK.startup(tempDir);
-        } catch (InterruptedException ie) {
-          throw new RuntimeInterruptedException(ie);
+          mZKCluster = new TestingCluster(1);
+        } catch (Exception e) {
+          ZooKeeperUtils.wrapAndRethrow(e);
         }
-        mMiniZkCluster = miniZK;
 
-        final String zkAddress ="localhost:" + mMiniZkCluster.getClientPort();
-        LOG.info("Creating testing utility ZooKeeperClient for {}", zkAddress);
-        mMiniZkClient = ZooKeeperClient.getZooKeeperClient(zkAddress);
+        final String zkAddress = mZKCluster.getConnectString();
+        LOG.debug("Creating testing utility ZooKeeperClient for {}", zkAddress);
+        mZKClient = ZooKeeperUtils.getZooKeeperClient(zkAddress);
       }
-      return mMiniZkCluster;
+      return mZKCluster;
     }
   }
 

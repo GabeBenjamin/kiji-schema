@@ -21,7 +21,6 @@ package org.kiji.schema.cassandra;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,11 +81,10 @@ public interface CassandraFactory extends PriorityProvider {
    * Creates a lock factory for a given Kiji instance.
    *
    * @param uri URI of the Kiji instance to create a lock factory for.
-   * @param conf Hadoop configuration.
    * @return a factory for locks for the specified Kiji instance.
    * @throws java.io.IOException on I/O error.
    */
-  LockFactory getLockFactory(KijiURI uri, Configuration conf) throws IOException;
+  LockFactory getLockFactory(KijiURI uri) throws IOException;
 
   /**
    * Creates and opens a ZooKeeperClient for a given Kiji instance.

@@ -49,7 +49,6 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -782,14 +781,12 @@ public final class CassandraSchemaTable implements KijiSchemaTable {
    *
    * @param admin The C* Admin interface for the HBase cluster to install into.
    * @param kijiURI the KijiURI.
-   * @param conf The Hadoop configuration.
    * @param lockFactory for creating ZooKeeper locks.
    * @throws java.io.IOException on I/O error.
    */
   public static void install(
       CassandraAdmin admin,
       KijiURI kijiURI,
-      Configuration conf,
       LockFactory lockFactory)
       throws IOException {
     // Keep all versions of schema entries:

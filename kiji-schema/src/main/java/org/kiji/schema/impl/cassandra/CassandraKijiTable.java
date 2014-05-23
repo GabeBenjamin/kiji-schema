@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,9 +114,6 @@ public final class CassandraKijiTable implements KijiTable {
   /** Retain counter. When decreased to 0, the HBase KijiTable may be closed and disposed of. */
   private final AtomicInteger mRetainCount = new AtomicInteger(0);
 
-  /** Hadoop configuration object. */
-  private final Configuration mConf;
-
   /** Writer factory for this table. */
   private final KijiWriterFactory mWriterFactory;
 
@@ -135,7 +131,6 @@ public final class CassandraKijiTable implements KijiTable {
    *
    * @param kiji The Kiji instance.
    * @param name The name of the Kiji user-space table to open.
-   * @param conf The Hadoop configuration object.
    * @param admin The Cassandra admin object.
    * @param layoutMonitor for the Kiji table.
    * @throws java.io.IOException On a C* error.
@@ -144,7 +139,6 @@ public final class CassandraKijiTable implements KijiTable {
   CassandraKijiTable(
       CassandraKiji kiji,
       String name,
-      Configuration conf,
       CassandraAdmin admin,
       TableLayoutMonitor layoutMonitor)
       throws IOException {
@@ -157,7 +151,6 @@ public final class CassandraKijiTable implements KijiTable {
 
     mName = name;
     mAdmin = admin;
-    mConf = conf;
     mTableURI = CassandraKijiURI.newBuilder(mKiji.getURI()).withTableName(mName).build();
     LOG.debug("Opening Kiji table '{}' with client version '{}'.",
         mTableURI, VersionInfo.getSoftwareVersion());

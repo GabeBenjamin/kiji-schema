@@ -20,11 +20,10 @@
 package org.kiji.schema.cassandra;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
-import org.apache.hadoop.conf.Configuration;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +60,11 @@ public final class CassandraKijiInstaller {
    * Installs the specified Kiji instance.
    *
    * @param uri URI of the Kiji instance to install.
-   * @param conf Hadoop configuration
    * @throws IOException on I/O error.
    * @throws KijiInvalidNameException if the Kiji instance name is invalid or already exists.
    */
-  public void install(KijiURI uri, Configuration conf) throws IOException {
-    install(uri, CassandraFactory.Provider.get(), Collections.<String, String>emptyMap(), conf);
+  public void install(KijiURI uri) throws IOException {
+    install(uri, CassandraFactory.Provider.get(), ImmutableMap.<String, String>of());
   }
 
   /**
@@ -76,16 +74,14 @@ public final class CassandraKijiInstaller {
    * @param cassandraFactory C* factory.
    * @param properties Map of the initial system properties for installation, to be used in addition
    *     to the defaults.
-   * @param conf Hadoop configuration
    * @throws IOException on I/O error.
    * @throws KijiInvalidNameException if the instance name is invalid or already exists.
    */
   public void install(
       KijiURI uri,
       CassandraFactory cassandraFactory,
-      Map<String, String> properties,
-      Configuration conf)
-      throws IOException {
+      Map<String, String> properties
+  ) throws IOException {
     if (uri.getInstance() == null) {
       throw new KijiInvalidNameException(String.format(
           "Kiji URI '%s' does not specify a Kiji instance name", uri));
@@ -96,7 +92,7 @@ public final class CassandraKijiInstaller {
           "Kiji URI '%s' is not a valid Cassandra-Kiji URI", uri));
     }
 
-    final LockFactory lockFactory = cassandraFactory.getLockFactory(uri, conf);
+    final LockFactory lockFactory = cassandraFactory.getLockFactory(uri);
 
     try {
       LOG.info(String.format("Installing Cassandra Kiji instance '%s'.", uri));
@@ -108,14 +104,14 @@ public final class CassandraKijiInstaller {
       // Install the system, meta, and schema tables.
       CassandraSystemTable.install(cassandraAdmin, uri, properties);
       CassandraMetaTable.install(cassandraAdmin, uri);
-      CassandraSchemaTable.install(cassandraAdmin, uri, conf, lockFactory);
+      CassandraSchemaTable.install(cassandraAdmin, uri, lockFactory);
 
       // Grant the current user all privileges on the instance just created, if security is enabled.
-      //final Kiji kiji = CassandraKijiFactory.get().open(uri, conf, cassandraAdmin, lockFactory);
-      final Kiji kiji = CassandraKijiFactory.get().open(uri, conf);
+      //final Kiji kiji = CassandraKijiFactory.get().open(uri, cassandraAdmin, lockFactory);
+      final Kiji kiji = CassandraKijiFactory.get().open(uri);
       try {
         if (kiji.isSecurityEnabled()) {
-          CassandraKijiSecurityManager.installInstanceCreator(uri, conf, cassandraAdmin);
+          CassandraKijiSecurityManager.installInstanceCreator(uri, cassandraAdmin);
         }
       } finally {
         kiji.release();
@@ -134,11 +130,10 @@ public final class CassandraKijiInstaller {
    * Removes a kiji instance from the Cassandra cluster including any user tables.
    *
    * @param uri URI of the Kiji instance to install.
-   * @param conf Hadoop configuration.
    * @throws IOException on I/O error.
    * @throws KijiInvalidNameException if the instance name is invalid.
    */
-  public void uninstall(KijiURI uri, Configuration conf)
+  public void uninstall(KijiURI uri)
       throws IOException {
     if (uri.getInstance() == null) {
       throw new KijiInvalidNameException(String.format(
@@ -149,7 +144,7 @@ public final class CassandraKijiInstaller {
 
     LOG.info(String.format("Removing the Cassandra Kiji instance '%s'.", uri.getInstance()));
 
-    final Kiji kiji = CassandraKijiFactory.get().open(uri, conf);
+    final Kiji kiji = CassandraKijiFactory.get().open(uri);
     try {
       // TODO (SCHEMA-706): Add security checks when we have a plan for security in Cassandra Kiji.
 

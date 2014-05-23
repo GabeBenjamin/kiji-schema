@@ -46,8 +46,8 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiURI;
+import org.kiji.schema.impl.hbase.HBaseKijiInstaller;
 import org.kiji.schema.platform.SchemaPlatformBridge;
 import org.kiji.schema.tools.BaseTool;
 import org.kiji.schema.util.Debug;
@@ -512,7 +512,7 @@ public abstract class AbstractKijiIntegrationTest {
           try {
             final KijiURI kijiURI =
                 KijiURI.newBuilder(mHBaseURI).withInstanceName(instanceName).build();
-            KijiInstaller.get().install(kijiURI, conf);
+            HBaseKijiInstaller.get().install(kijiURI, conf);
 
             // This blocks if the queue is full:
             mKijiQueue.put(kijiURI);

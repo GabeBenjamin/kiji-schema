@@ -22,6 +22,7 @@ package org.kiji.schema.impl.hbase;
 import java.io.IOException;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 
@@ -56,7 +57,12 @@ public final class HBaseKijiFactory implements KijiFactory {
   /** {@inheritDoc} */
   @Override
   public int getPriority(Map<String, String> runtimeHints) {
-    // Default priority; should be used unless overridden by tests.
-    return Priority.NORMAL;
+    Preconditions.checkArgument(runtimeHints.containsKey(Kiji.KIJI_TYPE_KEY));
+    if (runtimeHints.get(Kiji.KIJI_TYPE_KEY).equals(KijiURI.TYPE_HBASE)) {
+      // Default priority; should be used unless overridden by tests.
+      return Priority.NORMAL;
+    } else {
+      return Priority.DISABLED;
+    }
   }
 }

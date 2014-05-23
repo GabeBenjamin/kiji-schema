@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -37,6 +38,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.kiji.delegation.Lookups;
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiURI;
@@ -119,7 +121,11 @@ public class IntegrationHelper extends Configured {
    * @throws Exception If there is an error.
    */
   public void installKiji(KijiURI kijiURI) throws Exception {
-    KijiInstaller.get().install(kijiURI, getConf());
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, kijiURI.getKijiType()));
+    // Removed "getConf()" here to be HBase / C* agnostic.
+    installer.install(kijiURI);
   }
 
   /**
@@ -128,7 +134,11 @@ public class IntegrationHelper extends Configured {
    * @throws Exception If there is an error.
    */
   public void uninstallKiji(KijiURI kijiURI) throws Exception {
-    KijiInstaller.get().uninstall(kijiURI, getConf());
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, kijiURI.getKijiType()));
+    // Removed "getConf()" here to be HBase / C* agnostic.
+    installer.uninstall(kijiURI);
   }
 
   /**

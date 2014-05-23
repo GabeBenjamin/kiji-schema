@@ -95,6 +95,9 @@ public class KijiURI {
   /** ZooKeeper client port configured from the local environment. */
   protected static final int ENV_ZOOKEEPER_CLIENT_PORT;
 
+  /** Used in Provider implementation for choosing between HBase and Cassandra Kiji factories.  */
+  public static final String TYPE_HBASE = "HBASE";
+
   /**
    * Resolves the local environment ZooKeeper parameters.
    *
@@ -777,4 +780,13 @@ public class KijiURI {
    * @return Whether this is a C* URI.
    */
   public boolean isCassandra() { return false; }
+
+  /**
+   * Get the "type" (i.e., HBase or Cassandra) of Kiji instance for this URI.
+   *
+   * @return the type of the Kiji instance refered to by this URI.
+   */
+  public String getKijiType() {
+    return TYPE_HBASE;
+  }
 }

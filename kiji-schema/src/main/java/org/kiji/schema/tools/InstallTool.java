@@ -29,15 +29,12 @@ import org.slf4j.LoggerFactory;
 
 import org.kiji.annotations.ApiAudience;
 import org.kiji.common.flags.Flag;
+import org.kiji.delegation.Lookups;
 import org.kiji.schema.KConstants;
+import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiAlreadyExistsException;
 import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiURI;
-import org.kiji.schema.cassandra.CassandraFactory;
-import org.kiji.schema.cassandra.CassandraKijiInstaller;
-import org.kiji.schema.hbase.HBaseFactory;
-import org.kiji.schema.impl.cassandra.CassandraSystemTable;
-import org.kiji.schema.impl.hbase.HBaseSystemTable;
 
 /**
  * A command-line tool for installing kiji instances on hbase clusters.
@@ -94,37 +91,17 @@ public final class InstallTool extends BaseTool {
     getPrintStream().println("Creating kiji instance: " + mKijiURI);
     getPrintStream().println("Creating meta tables for kiji instance...");
 
-    if (mKijiURI.isCassandra()) {
-      final Map<String, String> initialProperties = (null == mPropertiesFile)
-          ? EMPTY_MAP
-          : CassandraSystemTable.loadPropertiesFromFileToMap(mPropertiesFile);
-      try {
-        CassandraKijiInstaller.get().install(
-            mKijiURI,
-            CassandraFactory.Provider.get(),
-            initialProperties);
-        getPrintStream().println("Successfully created Kiji instance: " + mKijiURI);
-        return SUCCESS;
-      } catch (KijiAlreadyExistsException kaee) {
-        getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
-        return FAILURE;
-      }
-    } else {
-      final Map<String, String> initialProperties = (null == mPropertiesFile)
-              ? EMPTY_MAP
-              : HBaseSystemTable.loadPropertiesFromFileToMap(mPropertiesFile);
-      try {
-        KijiInstaller.get().install(
-            mKijiURI,
-            HBaseFactory.Provider.get(),
-            initialProperties,
-            getConf());
-        getPrintStream().println("Successfully created kiji instance: " + mKijiURI);
-        return SUCCESS;
-      } catch (KijiAlreadyExistsException kaee) {
-        getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
-        return FAILURE;
-      }
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, mKijiURI.getKijiType()));
+
+    try {
+      installer.installWithPropertiesFile(mKijiURI, mPropertiesFile);
+      getPrintStream().println("Successfully created Kiji instance: " + mKijiURI);
+      return SUCCESS;
+    } catch (KijiAlreadyExistsException kaee) {
+      getPrintStream().printf("Kiji instance '%s' already exists.%n", mKijiURI);
+      return FAILURE;
     }
   }
 

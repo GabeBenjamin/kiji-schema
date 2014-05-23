@@ -36,12 +36,12 @@ import org.slf4j.LoggerFactory;
 import org.kiji.schema.EntityId;
 import org.kiji.schema.EntityIdFactory;
 import org.kiji.schema.Kiji;
-import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiInvalidNameException;
 import org.kiji.schema.KijiTable;
 import org.kiji.schema.KijiTableWriter;
 import org.kiji.schema.KijiURI;
 import org.kiji.schema.avro.TableLayoutDesc;
+import org.kiji.schema.impl.hbase.HBaseKijiInstaller;
 import org.kiji.schema.layout.InvalidLayoutException;
 import org.kiji.schema.layout.KijiTableLayout;
 
@@ -186,7 +186,7 @@ public class InstanceBuilder {
     LOG.info(String.format("Building instance: %s", uri.toString()));
     try {
       if (mExistingKiji == null) {
-        KijiInstaller.get().install(uri, conf);
+        HBaseKijiInstaller.get().install(uri, conf);
       }
     } catch (KijiInvalidNameException kine) {
       throw new IOException(kine);

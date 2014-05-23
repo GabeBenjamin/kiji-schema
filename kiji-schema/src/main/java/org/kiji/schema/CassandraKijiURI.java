@@ -97,6 +97,9 @@ public final class CassandraKijiURI extends KijiURI {
   /** Cassandra client port number. */
   private final int mCassandraClientPort;
 
+  /** Used in Provider implementation for choosing between HBase and Cassandra Kiji factories.  */
+  public static final String TYPE_CASSANDRA = "CASSANDRA";
+
   /**
    * Constructs a new CassandraKijiURI with the given parameters.
    *
@@ -635,4 +638,10 @@ public final class CassandraKijiURI extends KijiURI {
   /** {@inheritDoc} */
   @Override
   public boolean isCassandra() { return true; }
+
+  /** {@inheritDoc} */
+  @Override
+  public String getKijiType() {
+    return TYPE_CASSANDRA;
+  }
 }

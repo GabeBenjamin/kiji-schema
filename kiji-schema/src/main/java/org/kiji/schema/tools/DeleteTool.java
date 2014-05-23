@@ -24,11 +24,13 @@ import java.util.Set;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hbase.HConstants;
 
 import org.kiji.annotations.ApiAudience;
 import org.kiji.common.flags.Flag;
+import org.kiji.delegation.Lookups;
 import org.kiji.schema.EntityId;
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiColumnName;
@@ -317,7 +319,10 @@ public final class DeleteTool extends BaseTool {
       getPrintStream().println("Delete aborted.");
       return FAILURE;
     }
-    KijiInstaller.get().uninstall(kiji.getURI(), getConf());
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, kiji.getURI().getKijiType()));
+    installer.uninstall(kiji.getURI());
     getPrintStream().println(String.format("Kiji instance '%s' deleted.", kiji.getURI()));
     return SUCCESS;
   }

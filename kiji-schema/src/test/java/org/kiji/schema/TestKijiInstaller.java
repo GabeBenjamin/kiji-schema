@@ -29,14 +29,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.junit.Test;
 
+import org.kiji.schema.impl.hbase.HBaseKijiInstaller;
+
 /** Tests for KijiInstaller. */
 public class TestKijiInstaller {
   @Test
   public void testInstallThenUninstall() throws Exception {
     final Configuration conf = HBaseConfiguration.create();
     final KijiURI uri = KijiURI.newBuilder("kiji://.fake.kiji-installer/test").build();
-    KijiInstaller.get().install(uri, conf);
-    KijiInstaller.get().uninstall(uri, conf);
+    HBaseKijiInstaller.get().install(uri, conf);
+    HBaseKijiInstaller.get().uninstall(uri, conf);
   }
 
   @Test
@@ -44,7 +46,7 @@ public class TestKijiInstaller {
     final Configuration conf = HBaseConfiguration.create();
     final KijiURI uri = KijiURI.newBuilder("kiji://.fake.kiji-installer/").build();
     try {
-      KijiInstaller.get().install(uri, conf);
+      HBaseKijiInstaller.get().install(uri, conf);
       fail("An exception should have been thrown.");
     } catch (KijiInvalidNameException kine) {
       assertEquals(
@@ -58,7 +60,7 @@ public class TestKijiInstaller {
     final Configuration conf = HBaseConfiguration.create();
     final KijiURI uri = KijiURI.newBuilder("kiji://.fake.kiji-installer/").build();
     try {
-      KijiInstaller.get().uninstall(uri, conf);
+      HBaseKijiInstaller.get().uninstall(uri, conf);
       fail("An exception should have been thrown.");
     } catch (KijiInvalidNameException kine) {
       assertEquals(
@@ -73,7 +75,7 @@ public class TestKijiInstaller {
     final KijiURI uri =
         KijiURI.newBuilder("kiji://.fake.kiji-installer/anInstanceThatNeverExisted").build();
     try {
-      KijiInstaller.get().uninstall(uri, conf);
+      HBaseKijiInstaller.get().uninstall(uri, conf);
       fail("An exception should have been thrown.");
     } catch (KijiNotInstalledException knie) {
       assertTrue(Pattern.matches(

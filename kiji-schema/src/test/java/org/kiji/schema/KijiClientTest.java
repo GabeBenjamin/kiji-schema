@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.kiji.checkin.CheckinUtils;
+import org.kiji.delegation.Lookups;
 import org.kiji.schema.platform.SchemaPlatformBridge;
 import org.kiji.schema.util.TestingFileUtils;
 
@@ -173,7 +175,10 @@ public class KijiClientTest {
         mTestName.getMethodName(),
         mKijiInstanceCounter.getAndIncrement());
     final KijiURI uri = KijiURI.newBuilder(clusterURI).withInstanceName(instanceName).build();
-    KijiInstaller.get().install(uri, mConf);
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, uri.getKijiType()));
+    installer.install(uri);
     final Kiji kiji = Kiji.Factory.open(uri, mConf);
 
     mKijis.add(kiji);
@@ -191,8 +196,12 @@ public class KijiClientTest {
    */
   public void deleteTestKiji(Kiji kiji) throws Exception {
     Preconditions.checkState(mKijis.contains(kiji));
+    KijiURI uri = kiji.getURI();
     kiji.release();
-    KijiInstaller.get().uninstall(kiji.getURI(), mConf);
+    KijiInstaller installer = Lookups
+        .getPriority(KijiInstaller.class)
+        .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, uri.getKijiType()));
+    installer.uninstall(uri);
     mKijis.remove(kiji);
   }
 
@@ -204,8 +213,12 @@ public class KijiClientTest {
   public final void teardownKijiTest() throws Exception {
     LOG.debug("Tearing down {}", mTestId);
     for (Kiji kiji : mKijis) {
+      KijiURI uri = kiji.getURI();
       kiji.release();
-      KijiInstaller.get().uninstall(kiji.getURI(), mConf);
+      KijiInstaller installer = Lookups
+          .getPriority(KijiInstaller.class)
+          .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, uri.getKijiType()));
+      installer.uninstall(uri);
     }
     mKijis = null;
     mKiji = null;

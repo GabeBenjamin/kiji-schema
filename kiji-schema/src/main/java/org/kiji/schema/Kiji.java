@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 
 import org.kiji.annotations.ApiAudience;
@@ -30,7 +31,6 @@ import org.kiji.annotations.ApiStability;
 import org.kiji.annotations.Inheritance;
 import org.kiji.delegation.Lookups;
 import org.kiji.schema.avro.TableLayoutDesc;
-import org.kiji.schema.impl.cassandra.CassandraKijiFactory;
 import org.kiji.schema.layout.KijiTableLayout;
 import org.kiji.schema.security.KijiSecurityManager;
 import org.kiji.schema.util.ReferenceCountable;
@@ -92,40 +92,48 @@ import org.kiji.schema.util.ReferenceCountable;
 @Inheritance.Sealed
 public interface Kiji extends KijiTableFactory, ReferenceCountable<Kiji> {
   /**
+   * Used as key in runtime hints Map for Provider framework for KijiFactory and KijiInstaller.
+   */
+  String KIJI_TYPE_KEY = "URI_TYPE";
+
+  /**
    * Provider for the default Kiji factory.
    *
    * Ensures that there is only one HBase-backed and one Cassandra-backed KijiFactory instance.
    */
   public static final class Factory {
-    /** HBase KijiFactory instance. */
-    private static KijiFactory mHBaseInstance;
 
-    /** Cassandra KijiFactory instance. */
-    private static CassandraKijiFactory mCassandraInstance;
-
-    /** @return the default HBaseKijiFactory. */
+    /**
+     * Legacy method, always returns an HBaseKijiFactory instance.
+     *
+     * @return the default KijiFactory.
+     */
     public static KijiFactory get() {
+      KijiFactory instance;
       synchronized (Kiji.Factory.class) {
-        if (null == mHBaseInstance) {
-          mHBaseInstance = Lookups.getPriority(KijiFactory.class).lookup();
-          assert(null != mHBaseInstance);
-        }
-        return mHBaseInstance;
+        instance = Lookups
+            .getPriority(KijiFactory.class)
+            .lookup(ImmutableMap.of(KIJI_TYPE_KEY, KijiURI.TYPE_HBASE));
+        assert(null != instance);
       }
+      return instance;
     }
 
     /**
-     * Return a singleton instance of a CassandraKijiFactory.
-     * @return The C* Kiji factory.
+     * Returns a KijiFactory for the appropriate type of Kiji (HBase or Cassandra), based on a URI.
+     *
+     * @param uri for the Kiji instance to build with the factory.
+     * @return the default KijiFactory.
      */
-    private static CassandraKijiFactory getCassandra() {
+    public static KijiFactory get(KijiURI uri) {
+      KijiFactory instance;
       synchronized (Kiji.Factory.class) {
-        if (null == mCassandraInstance) {
-          // No need for any Provider business here yet.
-          mCassandraInstance = CassandraKijiFactory.get();
-        }
-        return mCassandraInstance;
+        instance = Lookups
+            .getPriority(KijiFactory.class)
+            .lookup(ImmutableMap.of(KIJI_TYPE_KEY, uri.getKijiType()));
+        assert(null != instance);
       }
+      return instance;
     }
 
     /**
@@ -139,11 +147,7 @@ public interface Kiji extends KijiTableFactory, ReferenceCountable<Kiji> {
      * @throws IOException on I/O error.
      */
     public static Kiji open(KijiURI uri) throws IOException {
-      if (uri.isCassandra()) {
-        return getCassandra().open(uri);
-      } else {
-        return get().open(uri);
-      }
+      return get(uri).open(uri);
     }
 
     /**
@@ -158,11 +162,7 @@ public interface Kiji extends KijiTableFactory, ReferenceCountable<Kiji> {
      * @throws IOException on I/O error.
      */
     public static Kiji open(KijiURI uri, Configuration conf) throws IOException {
-      if (uri.isCassandra()) {
-        return getCassandra().open(uri, conf);
-      } else {
-        return get().open(uri, conf);
-      }
+      return get(uri).open(uri, conf);
     }
 
     /** Utility class may not be instantiated. */

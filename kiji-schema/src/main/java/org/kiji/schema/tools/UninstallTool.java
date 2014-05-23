@@ -23,16 +23,17 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import org.kiji.annotations.ApiAudience;
 import org.kiji.common.flags.Flag;
+import org.kiji.delegation.Lookups;
 import org.kiji.schema.KConstants;
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiInstaller;
 import org.kiji.schema.KijiInvalidNameException;
 import org.kiji.schema.KijiNotInstalledException;
 import org.kiji.schema.KijiURI;
-import org.kiji.schema.cassandra.CassandraKijiInstaller;
 
 /**
  * A command-line tool for uninstalling kiji instances from an hbase cluster.
@@ -100,11 +101,10 @@ public final class UninstallTool extends BaseTool {
       }
     }
     try {
-      if (!mKijiURI.isCassandra()) {
-        KijiInstaller.get().uninstall(mKijiURI, getConf());
-      } else {
-        CassandraKijiInstaller.get().uninstall(mKijiURI);
-      }
+      KijiInstaller installer = Lookups
+          .getPriority(KijiInstaller.class)
+          .lookup(ImmutableMap.of(Kiji.KIJI_TYPE_KEY, mKijiURI.getKijiType()));
+      installer.uninstall(mKijiURI);
       getPrintStream().println("Deleted kiji instance: " + mKijiURI.toString());
       return SUCCESS;
     } catch (IOException ioe) {

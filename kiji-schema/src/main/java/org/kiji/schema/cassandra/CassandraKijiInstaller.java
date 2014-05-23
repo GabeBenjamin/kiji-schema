@@ -106,7 +106,7 @@ public final class CassandraKijiInstaller {
       CassandraAdmin cassandraAdmin = cassandraAdminFactory.create(uri);
 
       // Install the system, meta, and schema tables.
-      CassandraSystemTable.install(cassandraAdmin, uri, conf, properties);
+      CassandraSystemTable.install(cassandraAdmin, uri, properties);
       CassandraMetaTable.install(cassandraAdmin, uri);
       CassandraSchemaTable.install(cassandraAdmin, uri, conf, lockFactory);
 

@@ -120,32 +120,14 @@ public abstract class CassandraAdmin implements Closeable {
    *
    * @param tableName The name of the table to create.
    * @param createTableStatement A string with the table layout.
-   * @return An interface for the table.
    */
-  public CassandraTableInterface createTable(
-      CassandraTableName tableName,
-      String createTableStatement) {
+  public void createTable(CassandraTableName tableName, String createTableStatement) {
     // TODO: Keep track of all tables associated with this session
     LOG.info("Creating table {} with statement {}.", tableName, createTableStatement);
     getSession().execute(createTableStatement);
 
     // Check that the table actually exists
     assert(tableExists(tableName));
-    return CassandraTableInterface.createFromCassandraAdmin(this, tableName);
-  }
-
-  /**
-   * Returns an interface to a Cassandra table.
-   *
-   * The `CassandraTableInterface` object is meant to provide functionality similar to that of
-   * `HTableInterface`.
-   *
-   * @param tableName The name of the table for which to return an interface.
-   * @return The interface for the specified Cassandra table.
-   */
-  public CassandraTableInterface getCassandraTableInterface(CassandraTableName tableName) {
-    assert(tableExists(tableName));
-    return CassandraTableInterface.createFromCassandraAdmin(this, tableName);
   }
 
   // TODO: Add something for disabling this table.

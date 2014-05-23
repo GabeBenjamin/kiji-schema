@@ -209,17 +209,15 @@ public final class CassandraKiji implements Kiji {
     }
 
     try {
-      mSystemTable = CassandraSystemTable.createAssumingTableExists(mURI, mConf, mAdmin);
+      mSystemTable = new CassandraSystemTable(mURI, mAdmin);
     } catch (KijiNotInstalledException kie) {
       // Some clients handle this unchecked Exception so do the same here.
       close();
       throw kie;
     }
 
-    mSchemaTable =
-        CassandraSchemaTable.createAssumingTableExists(mURI, mConf, mAdmin, lockFactory);
-    mMetaTable =
-        CassandraMetaTable.createAssumingTableExists(mURI, mConf, mSchemaTable, mAdmin);
+    mSchemaTable = new CassandraSchemaTable(mAdmin, lockFactory, mURI);
+    mMetaTable = new CassandraMetaTable(mURI, mAdmin, mSchemaTable);
 
     LOG.debug("Kiji instance '{}' is now opened.", mURI);
 

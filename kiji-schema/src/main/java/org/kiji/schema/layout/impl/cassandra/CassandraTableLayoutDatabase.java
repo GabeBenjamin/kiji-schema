@@ -59,7 +59,6 @@ import org.kiji.schema.cassandra.CassandraTableName;
 import org.kiji.schema.impl.AvroCellEncoder;
 import org.kiji.schema.impl.cassandra.CassandraAdmin;
 import org.kiji.schema.impl.cassandra.CassandraByteUtil;
-import org.kiji.schema.impl.cassandra.CassandraTableInterface;
 import org.kiji.schema.layout.CellSpec;
 import org.kiji.schema.layout.InvalidLayoutException;
 import org.kiji.schema.layout.KijiTableLayout;
@@ -117,7 +116,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   private final KijiURI mKijiURI;
 
   /** The C* table to use to store the layouts. */
-  private final CassandraTableInterface mTable;
+  private final CassandraTableName mMetaTableName;
 
   /** Cassandra administration object used for sending CQL requests to C* cluster. */
   private final CassandraAdmin mAdmin;
@@ -131,11 +130,11 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   /** Decoder for concrete layout cells. */
   private final KijiCellDecoder<TableLayoutDesc> mCellDecoder;
 
-  private PreparedStatement mPreparedStatementGetRows = null;
-  private PreparedStatement mPreparedStatementUpdateTableLayout = null;
-  private PreparedStatement mPreparedStatementRemoveAllTableLayoutVersions = null;
-  private PreparedStatement mPreparedStatementRemoveRecentTableLayoutVersions = null;
-  private PreparedStatement mPreparedStatementListTables = null;
+  private final PreparedStatement mGetRowsStatement;
+  private final PreparedStatement mUpdateTableLayoutStatement;
+  private final PreparedStatement mRemoveAllTableLayoutVersionsStatement;
+  private final PreparedStatement mRemoveRecentTableLayoutVersionsStatement;
+  private final PreparedStatement mListTablesStatement;
 
   private static final CellSchema CELL_SCHEMA = CellSchema.newBuilder()
       .setStorage(SchemaStorage.HASH)
@@ -143,70 +142,79 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
       .setValue(TableLayoutDesc.SCHEMA$.getFullName())
       .build();
 
-  // TODO: Don't need to separate statement preparation after adding separate statement cache.
-  /** Prepare statement. */
-  private void setPreparedStatementGetRows() {
-    CassandraTableName metaTableName = mTable.getTableName();
-
-    String queryText = String.format(
-        "SELECT * FROM %s WHERE %s=? LIMIT 1",
-        metaTableName,
-        QUALIFIER_TABLE
-    );
-    mPreparedStatementGetRows = mAdmin.getPreparedStatement(queryText);
+  /**
+   * Prepare statement to reuse many times.
+   *
+   * TODO (SCHEMA-748): Don't need statement preparation after adding statement cache.
+   *
+   * @return the prepared statement.
+   */
+  private PreparedStatement getGetRowsStatement() {
+    final String queryText =
+        String.format("SELECT * FROM %s WHERE %s=? LIMIT 1", mMetaTableName, QUALIFIER_TABLE);
+    return mAdmin.getPreparedStatement(queryText);
   }
 
-  // TODO: Don't need to separate statement preparation after adding separate statement cache.
-  /** Prepare statement. */
-  private void setPreparedStatementUpdateTableLayout() {
-    CassandraTableName metaTableName = mTable.getTableName();
-
-    String queryText = String.format(
+  /**
+   * Prepare statement to reuse many times.
+   *
+   * TODO (SCHEMA-748): Don't need statement preparation after adding statement cache.
+   *
+   * @return the prepared statement.
+   */
+  private PreparedStatement getUpdateTableLayoutStatement() {
+    final String queryText = String.format(
         "INSERT INTO %s (%s, %s, %s, %s, %s) VALUES (?, ?, ?, ?, ?)",
-        metaTableName,
+        mMetaTableName,
         QUALIFIER_TABLE,
         QUALIFIER_TIME,
         QUALIFIER_LAYOUT_ID,
         QUALIFIER_LAYOUT,
         QUALIFIER_UPDATE);
-    mPreparedStatementUpdateTableLayout = mAdmin.getPreparedStatement(queryText);
+    return mAdmin.getPreparedStatement(queryText);
   }
 
-  // TODO: Don't need to separate statement preparation after adding separate statement cache.
-  /** Prepare statement. */
-  private void setPreparedStatementRemoveAllTableLayoutVersions() {
-    CassandraTableName metaTableName = mTable.getTableName();
-    String queryText = String.format(
-        "DELETE FROM %s WHERE %s=?",
-        metaTableName,
-        QUALIFIER_TABLE
-      );
-    mPreparedStatementRemoveAllTableLayoutVersions = mAdmin.getPreparedStatement(queryText);
+  /**
+   * Prepare statement to reuse many times.
+   *
+   * TODO (SCHEMA-748): Don't need statement preparation after adding statement cache.
+   *
+   * @return the prepared statement.
+   */
+  private PreparedStatement getRemoveAllTableLayoutVersionsStatement() {
+    final String queryText =
+        String.format("DELETE FROM %s WHERE %s=?", mMetaTableName, QUALIFIER_TABLE);
+    return mAdmin.getPreparedStatement(queryText);
   }
 
-  // TODO: Don't need to separate statement preparation after adding separate statement cache.
-  /** Prepare statement. */
-  private void setPreparedStatementRemoveRecentTableLayoutVersions() {
-    CassandraTableName metaTableName = mTable.getTableName();
-    String queryText = String.format(
+  /**
+   * Prepare statement to reuse many times.
+   *
+   * TODO (SCHEMA-748): Don't need statement preparation after adding statement cache.
+   *
+   * @return the prepared statement.
+   */
+  private PreparedStatement getRemoveRecentTableLayoutVersionsStatement() {
+    final String queryText = String.format(
         "DELETE FROM %s WHERE %s=? AND %s=?",
-        metaTableName,
+        mMetaTableName,
         QUALIFIER_TABLE,
-        QUALIFIER_TIME
-    );
-    mPreparedStatementRemoveRecentTableLayoutVersions = mAdmin.getPreparedStatement(queryText);
+        QUALIFIER_TIME);
+    return mAdmin.getPreparedStatement(queryText);
   }
 
-  // TODO: Don't need to separate statement preparation after adding separate statement cache.
-  /** Prepare statement. */
-  private void setPreparedStatementListTables() {
-    String queryText = String.format(
-        "SELECT %s FROM %s",
-        QUALIFIER_TABLE,
-        mTable.getTableName()
-    );
-    mPreparedStatementListTables = mAdmin.getPreparedStatement(queryText);
+  /**
+   * Prepare statement to reuse many times.
+   *
+   * TODO (SCHEMA-748): Don't need statement preparation after adding statement cache.
+   *
+   * @return the prepared statement.
+   */
+  private PreparedStatement getListTablesStatement() {
+    String queryText = String.format("SELECT %s FROM %s", QUALIFIER_TABLE, mMetaTableName);
+    return mAdmin.getPreparedStatement(queryText);
   }
+
   /**
    * Install a table for storing table layout information.
    * @param admin A wrapper around an open C* session.
@@ -222,7 +230,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
 
     // For the rest of the table, the layout ID is a string, then we store the actual layout and
     // update as blobs.
-    String tableDescription = String.format(
+    final String tableDescription = String.format(
         "CREATE TABLE %s (%s text, %s timestamp, %s text, %s blob, %s blob, PRIMARY KEY (%s, %s)) "
             + "WITH CLUSTERING ORDER BY (%s DESC);",
         tableName,
@@ -244,27 +252,27 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
    * it is no longer needed.</p>
    *
    * @param kijiURI URI of the Kiji instance this layout database belongs to.
-   * @param ctable The C* table used to store the layout data.
+   * @param admin The Cassandra cluster connection.
    * @param schemaTable The Kiji schema table.
    * @throws java.io.IOException on I/O error.
    */
   public CassandraTableLayoutDatabase(
       KijiURI kijiURI,
-      CassandraTableInterface ctable,
+      CassandraAdmin admin,
       KijiSchemaTable schemaTable)
       throws IOException {
     mKijiURI = kijiURI;
-    mTable = Preconditions.checkNotNull(ctable);
-    mAdmin = mTable.getAdmin();
+    mMetaTableName = CassandraTableName.getMetaLayoutTableName(kijiURI);
+    mAdmin = admin;
     mSchemaTable = Preconditions.checkNotNull(schemaTable);
     final CellSpec cellSpec = CellSpec.fromCellSchema(CELL_SCHEMA, mSchemaTable);
     mCellEncoder = new AvroCellEncoder(cellSpec);
     mCellDecoder = SpecificCellDecoderFactory.get().create(cellSpec);
-    setPreparedStatementGetRows();
-    setPreparedStatementRemoveAllTableLayoutVersions();
-    setPreparedStatementUpdateTableLayout();
-    setPreparedStatementRemoveRecentTableLayoutVersions();
-    setPreparedStatementListTables();
+    mGetRowsStatement = getGetRowsStatement();
+    mRemoveAllTableLayoutVersionsStatement = getRemoveAllTableLayoutVersionsStatement();
+    mUpdateTableLayoutStatement = getUpdateTableLayoutStatement();
+    mRemoveRecentTableLayoutVersionsStatement = getRemoveRecentTableLayoutVersionsStatement();
+    mListTablesStatement = getListTablesStatement();
   }
 
   /** {@inheritDoc} */
@@ -273,7 +281,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
       throws IOException {
 
     // Normalize the new layout to use schema UIDs:
-    TableLayoutBuilder layoutBuilder = new TableLayoutBuilder(mSchemaTable);
+    final TableLayoutBuilder layoutBuilder = new TableLayoutBuilder(mSchemaTable);
     final TableLayoutDesc update = layoutBuilder.normalizeTableLayoutDesc(
         layoutUpdate,
         new LayoutOptions()
@@ -313,21 +321,21 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
           String.format("Layout ID '%s' already exists", layoutId));
     }
 
-    //String metaTableName = mTable.getTableName();
+    //String metaTableName = mMetaTableName;
 
-    Preconditions.checkNotNull(mPreparedStatementUpdateTableLayout);
+    Preconditions.checkNotNull(mUpdateTableLayoutStatement);
     // TODO: This should do a "check-and-put" to match the HBase implementation.
-    mAdmin.execute(mPreparedStatementUpdateTableLayout.bind(
-        tableName,
-        new Date(),
-        layoutId,
-        CassandraByteUtil.bytesToByteBuffer(encodeTableLayoutDesc(tableLayout.getDesc())),
-        CassandraByteUtil.bytesToByteBuffer(encodeTableLayoutDesc(update))
-    ));
+    mAdmin.execute(
+        mUpdateTableLayoutStatement.bind(
+            tableName,
+            new Date(),
+            layoutId,
+            ByteBuffer.wrap(mCellEncoder.encode(tableLayout.getDesc())),
+            ByteBuffer.wrap(mCellEncoder.encode(update)))
+    );
 
-    // TODO: C* flush?
     // Flush the writer schema for the Avro table layout first so other readers can see it.
-    //mSchemaTable.flush();
+    mSchemaTable.flush();
 
     return tableLayout;
   }
@@ -352,9 +360,8 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
    */
   private List<Row> getRows(String table, int numVersions) {
     Preconditions.checkArgument(numVersions >= 1,  "numVersions must be positive");
-    Preconditions.checkNotNull(mPreparedStatementGetRows);
-    ResultSet resultSet = mAdmin.execute(mPreparedStatementGetRows.bind(table));
-    return resultSet.all();
+    Preconditions.checkNotNull(mGetRowsStatement);
+    return mAdmin.execute(mGetRowsStatement.bind(table)).all();
   }
 
   /** {@inheritDoc} */
@@ -363,7 +370,7 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
       throws IOException {
     Preconditions.checkArgument(numVersions >= 1,  "numVersions must be positive");
 
-    List<Row> rows = getRows(table, numVersions);
+    final List<Row> rows = getRows(table, numVersions);
 
     // Convert result into a list of bytes
     final List<KijiTableLayout> layouts = Lists.newArrayList();
@@ -378,10 +385,12 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   /** {@inheritDoc} */
   @Override
   public NavigableMap<Long, KijiTableLayout> getTimedTableLayoutVersions(
-      String table, int numVersions) throws IOException {
+      String table,
+      int numVersions
+  ) throws IOException {
     Preconditions.checkArgument(numVersions >= 1, "numVersions must be positive");
 
-    List<Row> rows = getRows(table, numVersions);
+    final List<Row> rows = getRows(table, numVersions);
 
     // Convert result into a map from timestamps to values
     final NavigableMap<Long, KijiTableLayout> timedValues = Maps.newTreeMap();
@@ -400,9 +409,8 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   @Override
   public void removeAllTableLayoutVersions(String table) throws IOException {
     // TODO: Check for success?
-    Preconditions.checkNotNull(mPreparedStatementRemoveAllTableLayoutVersions);
-    mAdmin.execute(mPreparedStatementRemoveAllTableLayoutVersions.bind(table));
-
+    Preconditions.checkNotNull(mRemoveAllTableLayoutVersionsStatement);
+    mAdmin.execute(mRemoveAllTableLayoutVersionsStatement.bind(table));
   }
 
   /** {@inheritDoc} */
@@ -414,22 +422,22 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
     // Get a list of versions to delete
     List<Row> rows = getRows(table, numVersions);
 
-    Preconditions.checkNotNull(mPreparedStatementRemoveRecentTableLayoutVersions);
+    Preconditions.checkNotNull(mRemoveRecentTableLayoutVersionsStatement);
     for (Row row: rows) {
       Long timestamp = row.getDate(QUALIFIER_TIME).getTime();
       mAdmin.execute(
-          mPreparedStatementRemoveRecentTableLayoutVersions.bind(table, new Date(timestamp)));
+          mRemoveRecentTableLayoutVersionsStatement.bind(table, new Date(timestamp)));
     }
   }
 
   /** {@inheritDoc} */
   @Override
   public List<String> listTables() throws IOException {
-    Preconditions.checkNotNull(mPreparedStatementListTables);
+    Preconditions.checkNotNull(mListTablesStatement);
 
 
     // Just return a set of in-use tables
-    ResultSet resultSet = mAdmin.execute(mPreparedStatementListTables.bind());
+    ResultSet resultSet = mAdmin.execute(mListTablesStatement.bind());
     Set<String> keys = new HashSet<String>();
 
     // This code makes me miss Scala
@@ -470,9 +478,9 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   @Override
   public TableLayoutsBackup layoutsToBackup(String table) throws IOException {
     final List<TableLayoutBackupEntry> history = Lists.newArrayList();
-    TableLayoutsBackup backup = TableLayoutsBackup.newBuilder().setLayouts(history).build();
+    final TableLayoutsBackup backup = TableLayoutsBackup.newBuilder().setLayouts(history).build();
 
-    List<Row> rows = getRows(table, Integer.MAX_VALUE);
+    final List<Row> rows = getRows(table, Integer.MAX_VALUE);
     if (rows.isEmpty()) {
       LOG.info(String.format(
           "There is no row in the MetaTable named '%s' or the row is empty.", table));
@@ -483,19 +491,12 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
       final long timestamp = row.getDate(QUALIFIER_TIME).getTime();
       final TableLayoutDesc layout =
           decodeTableLayoutDesc(
-              CassandraByteUtil.byteBuffertoBytes(
-                row.getBytes(QUALIFIER_LAYOUT)
-              )
-          );
-
+              CassandraByteUtil.byteBuffertoBytes(row.getBytes(QUALIFIER_LAYOUT)));
 
       // TODO: May need some check here that the update is not null
       final TableLayoutDesc update =
           decodeTableLayoutDesc(
-              CassandraByteUtil.byteBuffertoBytes(
-                  row.getBytes(QUALIFIER_UPDATE)
-              )
-          );
+              CassandraByteUtil.byteBuffertoBytes(row.getBytes(QUALIFIER_UPDATE)));
 
       history.add(TableLayoutBackupEntry.newBuilder()
           .setLayout(layout)
@@ -511,14 +512,13 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
   public void restoreLayoutsFromBackup(String tableName, TableLayoutsBackup layoutBackup)
       throws IOException {
     LOG.info(String.format("Restoring layout history for table '%s'.", tableName));
-    CassandraTableName metaTableName = mTable.getTableName();
 
     // Looks like we need insertions with and without updates and timestamps.
 
     // TODO: Make this query a member of the class and prepare in the constructor
     String queryTextInsertAll = String.format(
         "INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)",
-        metaTableName,
+        mMetaTableName,
         QUALIFIER_TABLE,
         QUALIFIER_TIME,
         QUALIFIER_LAYOUT,
@@ -527,11 +527,11 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
 
     String queryTextInsertLayout = String.format(
         "INSERT INTO %s (%s, %s, %s) VALUES (?, ?, ?)",
-        metaTableName,
+        mMetaTableName,
         QUALIFIER_TABLE,
         QUALIFIER_TIME,
         QUALIFIER_LAYOUT);
-    PreparedStatement preparedStatementInsertLayout =
+    final PreparedStatement insertLayoutStatement =
         mAdmin.getPreparedStatement(queryTextInsertLayout);
 
     // TODO: Unclear what happens to layout IDs here...
@@ -548,19 +548,12 @@ public final class CassandraTableLayoutDatabase implements KijiTableLayoutDataba
             tableName,
             new Date(timestamp),
             layoutByteBuffer,
-            updateByteBuffer
-        ));
+            updateByteBuffer));
       } else {
-        mAdmin.execute(preparedStatementInsertLayout.bind(
-            tableName,
-            new Date(),
-            layoutByteBuffer
-        ));
+        mAdmin.execute(insertLayoutStatement.bind(tableName, new Date(), layoutByteBuffer));
       }
     }
-
     // TODO: Some kind of flush?
-
   }
 
   /**

@@ -494,7 +494,8 @@ public class KijiURI {
    */
   public static KijiURIBuilder newBuilder(KijiURI uri) {
     if (uri.isCassandra()) {
-      return CassandraKijiURI.newBuilder(uri);
+      assert(uri instanceof CassandraKijiURI);
+      return CassandraKijiURI.newBuilder((CassandraKijiURI) uri);
     }
     return new KijiURIBuilder(uri.getZookeeperQuorumOrdered(),
         uri.getZookeeperClientPort(),

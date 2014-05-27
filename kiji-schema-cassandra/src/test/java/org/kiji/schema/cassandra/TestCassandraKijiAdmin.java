@@ -103,7 +103,8 @@ public class TestCassandraKijiAdmin extends CassandraKijiClientTest {
       getLayout("table");
       fail("An exception should have been thrown.");
     } catch (KijiTableNotFoundException ktnfe) {
-      assertTrue(ktnfe.getMessage().startsWith("KijiTable not found: kiji://"));
+      assertTrue(ktnfe.toString(),
+          ktnfe.getMessage().startsWith("KijiTable not found: kiji-cassandra://"));
       assertEquals("table", ktnfe.getTableURI().getTable());
     }
     // TODO: Assert that the underlying Cassandra stuff is correct also.
@@ -116,7 +117,8 @@ public class TestCassandraKijiAdmin extends CassandraKijiClientTest {
       getKiji().modifyTableLayout(tableLayoutDesc);
       fail("An exception should have been thrown.");
     } catch (KijiTableNotFoundException ktnfe) {
-      assertTrue(ktnfe.getMessage().startsWith("KijiTable not found: kiji://"));
+      assertTrue(ktnfe.toString(),
+          ktnfe.getMessage().startsWith("KijiTable not found: kiji-cassandra://"));
       assertEquals("table", ktnfe.getTableURI().getTable());
     }
   }

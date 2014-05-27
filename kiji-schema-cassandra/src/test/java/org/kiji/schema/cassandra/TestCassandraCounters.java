@@ -369,6 +369,7 @@ public class TestCassandraCounters {
     mWriter.deleteFamily(mEntityId, INFO);
 
     rowData = mReader.get(mEntityId, request);
+    assertNotNull(rowData);
     assertNull(rowData.getMostRecentValue(INFO, VISITS));
     assertNull(rowData.getMostRecentValue(INFO, NAME));
   }
